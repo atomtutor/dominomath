@@ -247,7 +247,7 @@
     color:#8a8a8a;
   }
 
-  #grid1{position:absolute; left:15mm; right:15mm; top:24mm; bottom:11mm;}
+  #grid1{position:absolute; left:50%; top:35mm;}
   .piece{
     position:absolute;
     border:1.6pt dashed #3a3a3a;
@@ -264,8 +264,8 @@
     width:50%;
     vertical-align:middle;
     text-align:center;
-    font-size:15pt; font-weight:600;
-    padding:1mm 2mm;
+    font-size:13pt; font-weight:600;
+    padding:0.8mm 1.5mm;
     line-height:1.15;
     word-break:keep-all;
     color:#161616;
@@ -276,8 +276,8 @@
     font-size:6.6pt; color:#a9a9a9;
     z-index:2;
   }
-  .piece .cell.longtext{font-size:11pt;}
-  .piece .cell.longtext2{font-size:9.5pt;}
+  .piece .cell.longtext{font-size:10pt;}
+  .piece .cell.longtext2{font-size:8.7pt;}
 
   /* ---- pasting mat / answer key (snake shape, matches original chain geometry) ---- */
   #matgrid{
@@ -569,7 +569,6 @@ function renderMatSlots(tiles, showAnswers){
 
     html += `
       <div class="matslot ${orient}" style="left:${x}mm; top:${y}mm; width:${w}mm; height:${h}mm;">
-        <div class="num">${i+1}</div>
         ${inner}
       </div>`;
   });
@@ -626,10 +625,10 @@ function fitClass(text){
 
 function renderSheet(tiles){
   const cols=2, rows=6;
-  const gapX=7, gapY=5.5; // mm
-  const gridW=180, gridH=262; // approx available mm (matches #grid1 box)
-  const pieceW=(gridW - gapX*(cols-1))/cols;
-  const pieceH=(gridH - gapY*(rows-1))/rows;
+  const pieceW=54, pieceH=27; // mm - matches the pasting-mat's 27mm unit cell exactly
+  const gapX=10, gapY=11; // mm
+  const gridBlockW = cols*pieceW + (cols-1)*gapX;
+  const gridBlockH = rows*pieceH + (rows-1)*gapY;
 
   let piecesHtml='';
   tiles.forEach((t,i)=>{
@@ -637,7 +636,7 @@ function renderSheet(tiles){
     const x=col*(pieceW+gapX);
     const y=row*(pieceH+gapY);
     piecesHtml += `
-      <div class="piece" style="left:${x.toFixed(1)}mm; top:${y.toFixed(1)}mm; width:${pieceW.toFixed(1)}mm; height:${pieceH.toFixed(1)}mm;">
+      <div class="piece" style="left:${x.toFixed(1)}mm; top:${y.toFixed(1)}mm; width:${pieceW}mm; height:${pieceH}mm;">
         <div class="tag">✂ ${i+1}</div>
         <div class="cellrow">
           <div class="cell left ${fitClass(t.left)}">${t.left}</div>
@@ -659,7 +658,7 @@ function renderSheet(tiles){
         <div class="namefield">이름: ______________&nbsp;&nbsp;&nbsp;날짜: ______________</div>
       </div>
       <hr class="hr">
-      <div id="grid1">${piecesHtml}</div>
+      <div id="grid1" style="margin-left:${(-gridBlockW/2).toFixed(1)}mm; width:${gridBlockW}mm; height:${gridBlockH}mm;">${piecesHtml}</div>
       <div class="footer">도미노 연산 퍼즐</div>
     </div>`;
 
@@ -694,7 +693,7 @@ function renderSheet(tiles){
       </div>
       <hr class="hr">
       <div id="matgrid">${matAnswerHtml}</div>
-      <div class="footer"> 도미노 연산 퍼즐 - 정답</div>
+      <div class="footer">도미노 연산 퍼즐 - 정답</div>
     </div>`;
 
   sheetShell.innerHTML = `
