@@ -278,6 +278,7 @@
   }
   .piece .cell.longtext{font-size:10pt;}
   .piece .cell.longtext2{font-size:8.7pt;}
+  .piece .cell.longtext3{font-size:6.8pt; word-break:break-all;}
 
   /* ---- pasting mat / answer key (snake shape, matches original chain geometry) ---- */
   #matgrid{
@@ -319,6 +320,7 @@
   }
   .matslot .cell.longtext{font-size:10pt;}
   .matslot .cell.longtext2{font-size:8.7pt;}
+  .matslot .cell.longtext3{font-size:6.6pt; word-break:break-all;}
   .mathint{
     position:absolute;
     font-size:8.5pt;
@@ -376,7 +378,7 @@
           <option value="add">덧셈</option>
           <option value="sub">뺄셈</option>
           <option value="addsub" selected>덧셈+뺄셈</option>
-          <option value="mul">곱셈 (+덧셈)</option>
+          <option value="mul">곱셈</option>
           <option value="mix">혼합 (덧셈·뺄셈·곱셈)</option>
           <option value="make10">10 만들기</option>
         </select>
@@ -452,7 +454,7 @@ function genProblem(mode,min,max){
     case 'add': return genAdd(min,max);
     case 'sub': return genSub(min,max);
     case 'addsub': return Math.random()<0.5 ? genAdd(min,max) : genSub(min,max);
-    case 'mul': return Math.random()<0.5 ? genMul() : genAdd(min,max);
+    case 'mul': return genMul();
     case 'mix': {
       const r=Math.random();
       if(r<0.34) return genAdd(min,max);
@@ -470,6 +472,31 @@ function swapExpr(p){
   return null;
 }
 
+function repeatedAddExpr(p){
+  // e.g. 4x5 -> pick the smaller factor as the term COUNT, the larger as the term VALUE,
+  // so 4x5 becomes 5+5+5+5 (4 terms) rather than 5 terms of 4 - keeps it a bit shorter either way,
+  // but always mathematically equal to a*b.
+  const count = Math.min(p.a, p.b);
+  const term = Math.max(p.a, p.b);
+  return Array(count).fill(term).join('+');
+}
+
+// Picks how to display the connector cell that links to the PREVIOUS problem's answer.
+// '-' (subtraction) only ever shows the plain value (no commutative form exists).
+// '+' alternates between the plain value and a commutative swap.
+// '×' alternates between the plain value, a commutative swap, and a repeated-addition form.
+function connectorText(p){
+  if(p.op==='-') return String(p.value);
+  if(p.op==='+'){
+    return Math.random()<0.5 ? String(p.value) : swapExpr(p);
+  }
+  // '×'
+  const r = Math.random();
+  if(r<1/3) return String(p.value);
+  if(r<2/3) return swapExpr(p);
+  return repeatedAddExpr(p);
+}
+
 function buildChain(mode, min, max){
   const problems=[];
   for(let i=0;i<11;i++) problems.push(genProblem(mode,min,max));
@@ -479,24 +506,13 @@ function buildChain(mode, min, max){
 
   for(let i=1;i<=9;i++){
     const prev=problems[i-1];
-    const canSwap = (prev.op==='+' || prev.op==='×');
-    const showSwap = canSwap && Math.random()<0.5;
-    const leftText = showSwap ? swapExpr(prev) : String(prev.value);
-    tiles.push({left:leftText, right: problems[i].expr});
+    tiles.push({left: connectorText(prev), right: problems[i].expr});
   }
 
-  const last = problems[9];
-  const canSwapLast = (last.op==='+' || last.op==='×');
-  const showSwapLast = canSwapLast && Math.random()<0.5;
-  const leftTextLast = showSwapLast ? swapExpr(last) : String(last.value);
-  tiles.push({left:leftTextLast, right: problems[10].expr});
+  tiles.push({left: connectorText(problems[9]), right: problems[10].expr});
 
   // this yields 11 tiles so far (시작-tile + 9 mid + last); we need 12 total with 끝 tile
-  const finLast = problems[10];
-  const canSwapFin = (finLast.op==='+' || finLast.op==='×');
-  const showSwapFin = canSwapFin && Math.random()<0.5;
-  const finLeft = showSwapFin ? swapExpr(finLast) : String(finLast.value);
-  tiles.push({left: finLeft, right:'끝'});
+  tiles.push({left: connectorText(problems[10]), right:'끝'});
 
   return tiles;
 }
@@ -582,7 +598,7 @@ const opDescMap = {
   add: '0~설정 범위 안의 수로 <b>덧셈식</b>만 나와요.',
   sub: '0~설정 범위 안의 수로 <b>뺄셈식</b>만 나와요.',
   addsub: '설정 범위 안의 수로 <b>덧셈식과 뺄셈식</b>이 섞여 나와요.',
-  mul: '<b>곱셈식(구구단)</b>과 <b>덧셈식</b>이 섞여 나와요.',
+  mul: '<b>곱셈식(구구단)</b>만 나와요. 이어지는 방식은 계산값·교환법칙·반복 덧셈(응용 수식, 예: 4×4→4+4+4+4) 3가지가 골고루 섞여요.',
   mix: '<b>덧셈·뺄셈·곱셈</b> 세 종류가 모두 섞여 나와요.',
   make10: '0~10 사이의 수로 <b>10 만들기(예: 2+8)</b>와 <b>10에서 빼기(예: 10-9)</b>만 나와요. (범위 설정 무시, 0~10 고정)'
 };
@@ -618,6 +634,7 @@ let currentChain = null;
 
 function fitClass(text){
   const len = String(text).length;
+  if(len>=12) return 'longtext3';
   if(len>=7) return 'longtext2';
   if(len>=5) return 'longtext';
   return '';
