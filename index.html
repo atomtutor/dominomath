@@ -194,18 +194,38 @@
     padding:24px;
     background:#efe9d8;
     display:flex;
-    justify-content:center;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
   }
   .sheet-shell{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+    width:100%;
+  }
+  .page-frame{
     background:#fff;
     box-shadow:0 4px 18px rgba(0,0,0,0.18);
     overflow:auto;
     max-width:100%;
     border-radius:4px;
   }
+  .page-label{
+    align-self:flex-start;
+    margin-left:2px;
+    font-size:12px;
+    font-weight:800;
+    color:#fbf7ea;
+    background:var(--chalk-green-dark);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:6px 6px 0 0;
+  }
 
   /* ===== A4 sheet, real physical mm sizing (used for both screen + PDF capture) ===== */
-  #sheet{
+  .sheet{
     width:210mm;
     height:297mm;
     background:#ffffff;
@@ -214,13 +234,13 @@
     font-family:"Noto Sans KR","Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
     color:#1c1c1c;
   }
-  #sheet .headrow{margin:0 0 1mm;}
-  #sheet .title{font-size:18pt;font-weight:800;margin:0;color:#1c1c1c;}
-  #sheet .namefield{text-align:right;font-size:10pt;margin:1mm 0 0;color:#333;}
-  #sheet .subtitle{font-size:9.6pt;color:#3a3a3a;margin:1mm 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  #sheet .hr{border:none;border-top:1pt solid #2b2b2b;margin:2.4mm 0 0;}
+  .sheet .headrow{margin:0 0 1mm;}
+  .sheet .title{font-size:18pt;font-weight:800;margin:0;color:#1c1c1c;}
+  .sheet .namefield{text-align:right;font-size:10pt;margin:1mm 0 0;color:#333;}
+  .sheet .subtitle{font-size:9.6pt;color:#3a3a3a;margin:1mm 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sheet .hr{border:none;border-top:1pt solid #2b2b2b;margin:2.4mm 0 0;}
 
-  #sheet .badge{
+  .sheet .badge{
     position:absolute;
     top:14mm; right:15mm;
     font-size:8pt;
@@ -259,7 +279,54 @@
   .piece .cell.longtext{font-size:11pt;}
   .piece .cell.longtext2{font-size:9.5pt;}
 
-  #sheet .footer{
+  /* ---- pasting mat / answer key (snake shape, matches original chain geometry) ---- */
+  #matgrid{
+    position:absolute;
+    top:30mm; left:50%;
+    margin-left:-81mm;
+    width:162mm; height:243mm;
+  }
+  .matslot{
+    position:absolute;
+    border:2.1pt solid #333;
+    box-sizing:border-box;
+    background:#fff;
+    overflow:hidden;
+    display:table;
+    table-layout:fixed;
+  }
+  .matslot.h{width:54mm; height:27mm;}
+  .matslot.v{width:27mm; height:54mm;}
+  .matslot .cellrow{display:table-row;}
+  .matslot .cell{
+    display:table-cell;
+    width:50%;
+    vertical-align:middle;
+    text-align:center;
+    font-size:13pt; font-weight:600;
+    padding:1mm 1.5mm;
+    line-height:1.15;
+    word-break:keep-all;
+    color:#161616;
+  }
+  .matslot .cell.full{width:100%;}
+  .matslot .cell.b{border-left:1pt solid #999;}
+  .matslot .cellrow.second .cell{border-left:none;border-top:1pt solid #999;}
+  .matslot .num{
+    position:absolute; top:1mm; left:2mm;
+    font-size:6.6pt; color:#bbb;
+    z-index:2;
+  }
+  .matslot .cell.longtext{font-size:10pt;}
+  .matslot .cell.longtext2{font-size:8.7pt;}
+  .mathint{
+    position:absolute;
+    font-size:8.5pt;
+    color:#777;
+    white-space:nowrap;
+  }
+
+  .sheet .footer{
     position:absolute; bottom:5mm; left:0; right:0;
     text-align:center; font-size:7.6pt; color:#9a9a9a;
   }
@@ -288,7 +355,7 @@
   <header class="hero">
     <div class="eyebrow">도미노 연산 퍼즐</div>
     <h1>도미노 연산 퍼즐 생성기</h1>
-    <p>수의 범위와 연산식 종류를 고르면 Start부터 Finish까지 이어지는 12조각 도미노 체인을 만들어요. 확인 후 문제지를 A4 1장짜리 PDF로 내려받으세요.</p>
+    <p>수의 범위와 연산식 종류를 고르면 시작부터 끝까지 이어지는 12조각 도미노 체인을 만들어요. 확인 후 문제지를 PDF(문제지·붙임판·정답 3쪽)로 내려받으세요.</p>
   </header>
 
   <div class="panel">
@@ -326,13 +393,13 @@
     <div class="preview-area">
       <div class="sheet-shell" id="sheetShell">
         <div class="empty-hint" id="emptyHint">
-          <b>퍼즐 생성</b> 버튼을 누르면<br>여기에 A4 문제지 미리보기가 나타나요.
+          <b>퍼즐 생성</b> 버튼을 누르면<br>여기에 문제지·붙임판·정답 3쪽 미리보기가 나타나요.
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="note">화면 미리보기는 실제 A4 크기(210×297mm)로 렌더링되며, PDF도 동일한 배치로 저장됩니다.</footer>
+  <footer class="note">화면 미리보기는 실제 A4 크기(210×297mm)로 렌더링되며, PDF도 동일한 배치로 3쪽(문제지·붙임판·정답)에 걸쳐 저장됩니다.</footer>
 </div>
 
 <script>
@@ -408,7 +475,7 @@ function buildChain(mode, min, max){
   for(let i=0;i<11;i++) problems.push(genProblem(mode,min,max));
 
   const tiles=[];
-  tiles.push({left:'Start', right: problems[0].expr});
+  tiles.push({left:'시작', right: problems[0].expr});
 
   for(let i=1;i<=9;i++){
     const prev=problems[i-1];
@@ -424,12 +491,12 @@ function buildChain(mode, min, max){
   const leftTextLast = showSwapLast ? swapExpr(last) : String(last.value);
   tiles.push({left:leftTextLast, right: problems[10].expr});
 
-  // this yields 11 tiles so far (Start-tile + 9 mid + last); we need 12 total with Finish tile
+  // this yields 11 tiles so far (시작-tile + 9 mid + last); we need 12 total with 끝 tile
   const finLast = problems[10];
   const canSwapFin = (finLast.op==='+' || finLast.op==='×');
   const showSwapFin = canSwapFin && Math.random()<0.5;
   const finLeft = showSwapFin ? swapExpr(finLast) : String(finLast.value);
-  tiles.push({left: finLeft, right:'Finish'});
+  tiles.push({left: finLeft, right:'끝'});
 
   return tiles;
 }
@@ -444,6 +511,69 @@ function shuffleForPrint(tiles){
     [arr[i],arr[j]]=[arr[j],arr[i]];
   }
   return arr;
+}
+
+// ============================================================
+// Pasting-mat / answer-key geometry
+// This is the fixed "snake" shape (matches the printed reference
+// layout): 12 slots on a 6x9 unit grid. Independent of puzzle
+// content - only the chain order (tiles[0..11]) is mapped onto it.
+// ============================================================
+const MAT_LAYOUT = [
+  // [orientation, colA,rowA, colB,rowB]
+  ['v', 5,0, 5,1],
+  ['h', 4,2, 5,2],
+  ['h', 2,2, 3,2],
+  ['h', 0,2, 1,2],
+  ['v', 0,3, 0,4],
+  ['h', 0,5, 1,5],
+  ['h', 2,5, 3,5],
+  ['h', 4,5, 5,5],
+  ['v', 5,6, 5,7],
+  ['h', 4,8, 5,8],
+  ['h', 2,8, 3,8],
+  ['h', 0,8, 1,8],
+];
+// true = cellA shows tile.right (new problem), cellB shows tile.left (connector)
+// false = cellA shows tile.left (connector), cellB shows tile.right (new problem)
+const MAT_SWAP = [false,true,true,true,false,false,false,false,false,true,true,true];
+
+const MAT_UNIT = 27; // mm
+
+function renderMatSlots(tiles, showAnswers){
+  let html='';
+  MAT_LAYOUT.forEach((slot,i)=>{
+    const [orient, ca,ra, cb,rb] = slot;
+    const x = ca*MAT_UNIT, y = ra*MAT_UNIT;
+    const w = orient==='h' ? MAT_UNIT*2 : MAT_UNIT;
+    const h = orient==='h' ? MAT_UNIT : MAT_UNIT*2;
+    const t = tiles[i];
+    const swap = MAT_SWAP[i];
+    const textA = swap ? t.right : t.left;
+    const textB = swap ? t.left : t.right;
+
+    let inner;
+    if(!showAnswers){
+      inner = orient==='h'
+        ? `<div class="cellrow"><div class="cell a"></div><div class="cell b"></div></div>`
+        : `<div class="cellrow"><div class="cell a full"></div></div><div class="cellrow second"><div class="cell b full"></div></div>`;
+    } else if(orient==='h'){
+      inner = `<div class="cellrow">
+          <div class="cell a ${fitClass(textA)}">${textA}</div>
+          <div class="cell b ${fitClass(textB)}">${textB}</div>
+        </div>`;
+    } else {
+      inner = `<div class="cellrow"><div class="cell a full ${fitClass(textA)}">${textA}</div></div>
+        <div class="cellrow second"><div class="cell b full ${fitClass(textB)}">${textB}</div></div>`;
+    }
+
+    html += `
+      <div class="matslot ${orient}" style="left:${x}mm; top:${y}mm; width:${w}mm; height:${h}mm;">
+        <div class="num">${i+1}</div>
+        ${inner}
+      </div>`;
+  });
+  return html;
 }
 
 // ============================================================
@@ -485,6 +615,7 @@ opType.addEventListener('change', refreshOpDesc);
 refreshOpDesc();
 
 let currentTilesShuffled = null;
+let currentChain = null;
 
 function fitClass(text){
   const len = String(text).length;
@@ -517,10 +648,12 @@ function renderSheet(tiles){
 
   const modeLabel = document.getElementById('opType').selectedOptions[0].textContent;
   const rangeLabel = opType.value==='make10' ? '0~10' : `${minNum.value}~${maxNum.value}`;
+  const badgeBase = `${modeLabel} · 범위 ${rangeLabel}`;
 
-  const html = `
-    <div id="sheet">
-      <div class="badge">${modeLabel} · 범위 ${rangeLabel}</div>
+  // ---- page 1: cutting sheet (shuffled order, already passed in as `tiles`) ----
+  const page1 = `
+    <div class="sheet" id="sheet1">
+      <div class="badge">${badgeBase} · 1/3 문제지</div>
       <div class="headrow">
         <div class="title">도미노 연산 퍼즐 - 문제지 (오려 쓰기)</div>
         <div class="namefield">이름: ______________&nbsp;&nbsp;&nbsp;날짜: ______________</div>
@@ -530,7 +663,48 @@ function renderSheet(tiles){
       <div class="footer">도미노 연산 퍼즐</div>
     </div>`;
 
-  sheetShell.innerHTML = html;
+  // ---- page 2: pasting mat (empty, correct chain order & shape) ----
+  const matEmptyHtml = renderMatSlots(currentChain, false);
+  const startXY = [5*MAT_UNIT, 0*MAT_UNIT];
+  const finXY = [0*MAT_UNIT, 8*MAT_UNIT];
+  const page2 = `
+    <div class="sheet" id="sheet2">
+      <div class="badge">${badgeBase} · 2/3 붙임판</div>
+      <div class="headrow">
+        <div class="title">도미노 연산 퍼즐 - 붙임판</div>
+        <div class="namefield">이름: ______________&nbsp;&nbsp;&nbsp;날짜: ______________</div>
+      </div>
+      <hr class="hr">
+      <div id="matgrid">
+        ${matEmptyHtml}
+        <div class="mathint" style="left:${startXY[0]+MAT_UNIT+3}mm; top:${startXY[1]+MAT_UNIT*0.5-4}mm;">← 여기서 시작</div>
+        <div class="mathint" style="left:${finXY[0]}mm; top:${finXY[1]+MAT_UNIT+2}mm;">'끝' 조각이 여기 와요 ↑</div>
+      </div>
+      <div class="footer">도미노 연산 퍼즐 - 붙임판 (오려낸 조각을 시작에서 끝까지 이어지도록 붙이세요)</div>
+    </div>`;
+
+  // ---- page 3: answer key (mat shape filled in with the correct chain) ----
+  const matAnswerHtml = renderMatSlots(currentChain, true);
+  const page3 = `
+    <div class="sheet" id="sheet3">
+      <div class="badge">${badgeBase} · 3/3 정답</div>
+      <div class="headrow">
+        <div class="title">도미노 연산 퍼즐 - 정답</div>
+        <div class="namefield">&nbsp;</div>
+      </div>
+      <hr class="hr">
+      <div id="matgrid">${matAnswerHtml}</div>
+      <div class="footer"> 도미노 연산 퍼즐 - 정답</div>
+    </div>`;
+
+  sheetShell.innerHTML = `
+    <div class="page-label">1 / 3 · 문제지 (오려쓰기)</div>
+    <div class="page-frame">${page1}</div>
+    <div class="page-label">2 / 3 · 붙임판</div>
+    <div class="page-frame">${page2}</div>
+    <div class="page-label">3 / 3 · 정답</div>
+    <div class="page-frame">${page3}</div>
+  `;
 }
 
 genBtn.addEventListener('click', ()=>{
@@ -543,6 +717,7 @@ genBtn.addEventListener('click', ()=>{
 
   const mode = opType.value;
   const chain = buildChain(mode, min, max);
+  currentChain = chain;
   currentTilesShuffled = shuffleForPrint(chain);
   renderSheet(currentTilesShuffled);
   pdfBtn.disabled = false;
@@ -550,8 +725,8 @@ genBtn.addEventListener('click', ()=>{
 });
 
 pdfBtn.addEventListener('click', async ()=>{
-  const sheetEl = document.getElementById('sheet');
-  if(!sheetEl) return;
+  const sheetEls = ['sheet1','sheet2','sheet3'].map(id=>document.getElementById(id));
+  if(sheetEls.some(el=>!el)) return;
   if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
     statusText.textContent = 'PDF 라이브러리를 불러오지 못했습니다. vendor 폴더 경로를 확인해 주세요.';
     return;
@@ -564,13 +739,17 @@ pdfBtn.addEventListener('click', async ()=>{
     if(document.fonts && document.fonts.ready){
       await document.fonts.ready;
     }
-    const canvas = await html2canvas(sheetEl, {scale:3, backgroundColor:'#ffffff', useCORS:true});
-    const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-    pdf.save('도미노_연산퍼즐_문제지.pdf');
-    statusText.textContent = 'PDF 다운로드가 완료되었습니다.';
+    for(let i=0;i<sheetEls.length;i++){
+      statusText.textContent = `PDF를 만들고 있어요... (${i+1}/${sheetEls.length}쪽)`;
+      const canvas = await html2canvas(sheetEls[i], {scale:3, backgroundColor:'#ffffff', useCORS:true});
+      const imgData = canvas.toDataURL('image/png');
+      if(i>0) pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+    }
+    pdf.save('도미노_연산퍼즐.pdf');
+    statusText.textContent = 'PDF 다운로드가 완료되었습니다. (문제지·붙임판·정답 3쪽)';
   }catch(e){
     console.error(e);
     statusText.textContent = 'PDF 생성 중 오류가 발생했습니다: ' + (e && e.message ? e.message : e);
