@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>도미노 연산 퍼즐 생성기</title>
+<style>
+  @font-face{
+    font-family:"Noto Sans KR";
+    font-weight:400 600;
+    src:url("./fonts/NotoSansKR-Regular.woff2") format("woff2");
+    font-display:swap;
+  }
+  @font-face{
+    font-family:"Noto Sans KR";
+    font-weight:700 900;
+    src:url("./fonts/NotoSansKR-Bold.woff2") format("woff2");
+    font-display:swap;
+  }
+</style>
+<script src="./vendor/html2canvas.min.js"></script>
+<script src="./vendor/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --chalk-green:#2f4f42;
+    --chalk-green-dark:#22392f;
+    --paper:#faf6ec;
+    --paper-line:#e4dcc4;
+    --mustard:#d9a441;
+    --mustard-dark:#b9832b;
+    --ink:#233029;
+    --muted:#7c8a80;
+    --danger:#b5533c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Noto Sans KR","Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0) 0 0/22px 22px,
+      var(--chalk-green);
+    color:var(--ink);
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  header.hero{
+    text-align:left;
+    color:#fbf7ea;
+    margin-bottom:22px;
+    padding:2px 4px;
+  }
+  header.hero .eyebrow{
+    font-size:12.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--mustard);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  header.hero h1{
+    font-size:30px;
+    margin:0 0 8px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  header.hero p{
+    margin:0;
+    color:#d8dfd7;
+    font-size:14.5px;
+    max-width:640px;
+    line-height:1.55;
+  }
+
+  .panel{
+    background:var(--paper);
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.28);
+    overflow:hidden;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+
+  .controls{
+    padding:22px 24px;
+    background:
+      linear-gradient(var(--paper),var(--paper)) padding-box,
+      repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px) padding-box;
+    border-bottom:2px dashed #c9bd97;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px 28px;
+  }
+  @media (max-width:680px){ .controls{grid-template-columns:1fr;} }
+
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:800;
+    color:var(--chalk-green-dark);
+    letter-spacing:.03em;
+    margin-bottom:8px;
+  }
+  .field .hint{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:6px;
+    line-height:1.4;
+  }
+
+  .range-row{display:flex;align-items:center;gap:10px;}
+  .range-row input[type=number]{
+    width:84px;
+    padding:9px 10px;
+    border-radius:9px;
+    border:1.5px solid #cfc6a3;
+    background:#fff;
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+    text-align:center;
+  }
+  .range-row input[type=number]:disabled{
+    background:#efece2;
+    color:#a8a190;
+  }
+  .range-row span.tilde{color:var(--muted);font-weight:700;}
+
+  select#opType{
+    width:100%;
+    padding:10px 12px;
+    border-radius:9px;
+    border:1.5px solid #cfc6a3;
+    background:#fff;
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .opdesc{
+    margin-top:10px;
+    font-size:12.5px;
+    color:var(--chalk-green-dark);
+    background:#f0ead4;
+    border:1px solid #ddd2a8;
+    border-radius:8px;
+    padding:8px 10px;
+    line-height:1.5;
+  }
+
+  .actions{
+    padding:16px 24px 22px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+    border-bottom:1px solid #eee6cd;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:10px;
+    padding:12px 20px;
+    font-size:14.5px;
+    font-weight:800;
+    letter-spacing:.01em;
+    transition:transform .08s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  button:active{transform:translateY(1px);}
+  #genBtn{
+    background:var(--mustard);
+    color:#3a2a08;
+    box-shadow:0 6px 0 var(--mustard-dark);
+  }
+  #genBtn:hover{filter:brightness(1.04);}
+  #pdfBtn{
+    background:var(--chalk-green-dark);
+    color:#fbf7ea;
+    box-shadow:0 6px 0 #16241d;
+  }
+  #pdfBtn:disabled{
+    background:#c9c3b2;
+    color:#8b8677;
+    box-shadow:0 6px 0 #b3ad9c;
+    cursor:not-allowed;
+  }
+  .status{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-left:auto;
+  }
+
+  .preview-area{
+    padding:24px;
+    background:#efe9d8;
+    display:flex;
+    justify-content:center;
+  }
+  .sheet-shell{
+    background:#fff;
+    box-shadow:0 4px 18px rgba(0,0,0,0.18);
+    overflow:auto;
+    max-width:100%;
+    border-radius:4px;
+  }
+
+  /* ===== A4 sheet, real physical mm sizing (used for both screen + PDF capture) ===== */
+  #sheet{
+    width:210mm;
+    height:297mm;
+    background:#ffffff;
+    position:relative;
+    padding:14mm 15mm 12mm;
+    font-family:"Noto Sans KR","Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    color:#1c1c1c;
+  }
+  #sheet .headrow{margin:0 0 1mm;}
+  #sheet .title{font-size:18pt;font-weight:800;margin:0;color:#1c1c1c;}
+  #sheet .namefield{text-align:right;font-size:10pt;margin:1mm 0 0;color:#333;}
+  #sheet .subtitle{font-size:9.6pt;color:#3a3a3a;margin:1mm 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #sheet .hr{border:none;border-top:1pt solid #2b2b2b;margin:2.4mm 0 0;}
+
+  #sheet .badge{
+    position:absolute;
+    top:14mm; right:15mm;
+    font-size:8pt;
+    color:#8a8a8a;
+  }
+
+  #grid1{position:absolute; left:15mm; right:15mm; top:24mm; bottom:11mm;}
+  .piece{
+    position:absolute;
+    border:1.6pt dashed #3a3a3a;
+    box-sizing:border-box;
+    background:#fff;
+    overflow:hidden;
+    display:table;
+    table-layout:fixed;
+    width:100%;
+  }
+  .piece .cellrow{display:table-row;}
+  .piece .cell{
+    display:table-cell;
+    width:50%;
+    vertical-align:middle;
+    text-align:center;
+    font-size:15pt; font-weight:600;
+    padding:1mm 2mm;
+    line-height:1.15;
+    word-break:keep-all;
+    color:#161616;
+  }
+  .piece .cell.right{border-left:1pt solid #555;}
+  .piece .tag{
+    position:absolute; top:1mm; left:2mm;
+    font-size:6.6pt; color:#a9a9a9;
+    z-index:2;
+  }
+  .piece .cell.longtext{font-size:11pt;}
+  .piece .cell.longtext2{font-size:9.5pt;}
+
+  #sheet .footer{
+    position:absolute; bottom:5mm; left:0; right:0;
+    text-align:center; font-size:7.6pt; color:#9a9a9a;
+  }
+
+  .empty-hint{
+    padding:60px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.7;
+  }
+  .empty-hint b{color:var(--chalk-green-dark);}
+
+  footer.note{
+    text-align:center;
+    color:#d8dfd7;
+    font-size:11.5px;
+    margin-top:18px;
+    opacity:.75;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">킨더수학 팩토 · 도미노 연산 퍼즐</div>
+    <h1>도미노 연산 퍼즐 생성기</h1>
+    <p>수의 범위와 연산식 종류를 고르면 Start부터 Finish까지 이어지는 12조각 도미노 체인을 만들어요. 확인 후 문제지를 A4 1장짜리 PDF로 내려받으세요.</p>
+  </header>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="field">
+        <label for="minNum">수의 범위</label>
+        <div class="range-row">
+          <input type="number" id="minNum" value="0" min="0" max="1000">
+          <span class="tilde">~</span>
+          <input type="number" id="maxNum" value="10" min="0" max="1000">
+        </div>
+        <div class="hint" id="rangeHint">문제와 정답에 나오는 모든 숫자가 이 범위 안에서 만들어져요.</div>
+      </div>
+
+      <div class="field">
+        <label for="opType">연산식 종류</label>
+        <select id="opType">
+          <option value="add">덧셈</option>
+          <option value="sub">뺄셈</option>
+          <option value="addsub" selected>덧셈+뺄셈</option>
+          <option value="mul">곱셈 (+덧셈)</option>
+          <option value="mix">혼합 (덧셈·뺄셈·곱셈)</option>
+          <option value="make10">10 만들기</option>
+        </select>
+        <div class="opdesc" id="opDesc"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="genBtn">🎲 퍼즐 생성</button>
+      <button id="pdfBtn" disabled>⬇ PDF로 다운로드</button>
+      <span class="status" id="statusText"></span>
+    </div>
+
+    <div class="preview-area">
+      <div class="sheet-shell" id="sheetShell">
+        <div class="empty-hint" id="emptyHint">
+          <b>퍼즐 생성</b> 버튼을 누르면<br>여기에 A4 문제지 미리보기가 나타나요.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">화면 미리보기는 실제 A4 크기(210×297mm)로 렌더링되며, PDF도 동일한 배치로 저장됩니다.</footer>
+</div>
+
+<script>
+// ============================================================
+// Puzzle generation
+// ============================================================
+function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
+function genAdd(min,max){
+  for(let t=0;t<300;t++){
+    const a=randInt(min,max), b=randInt(min,max);
+    const s=a+b;
+    if(s>=min && s<=max) return {expr:`${a}+${b}`, value:s, op:'+', a, b};
+  }
+  const a=randInt(min,max);
+  const bmax=Math.max(min,max-a);
+  const b=randInt(min,Math.max(min,bmax));
+  return {expr:`${a}+${b}`, value:a+b, op:'+', a, b};
+}
+
+function genSub(min,max){
+  for(let t=0;t<300;t++){
+    let a=randInt(min,max), b=randInt(min,max);
+    if(b>a){ const tmp=a; a=b; b=tmp; }
+    const s=a-b;
+    if(s>=min && s<=max) return {expr:`${a}-${b}`, value:s, op:'-', a, b};
+  }
+  const a=randInt(min,max);
+  const b=randInt(min, a);
+  return {expr:`${a}-${b}`, value:a-b, op:'-', a, b};
+}
+
+function genMul(){
+  const a=randInt(2,9), b=randInt(2,9);
+  return {expr:`${a}×${b}`, value:a*b, op:'×', a, b};
+}
+
+function genMake10(){
+  if(Math.random()<0.5){
+    const a=randInt(1,9), b=10-a;
+    return {expr:`${a}+${b}`, value:10, op:'+', a, b};
+  } else {
+    const a=randInt(0,10), b=10-a;
+    return {expr:`10-${a}`, value:b, op:'-', a, b:10};
+  }
+}
+
+function genProblem(mode,min,max){
+  switch(mode){
+    case 'add': return genAdd(min,max);
+    case 'sub': return genSub(min,max);
+    case 'addsub': return Math.random()<0.5 ? genAdd(min,max) : genSub(min,max);
+    case 'mul': return Math.random()<0.5 ? genMul() : genAdd(min,max);
+    case 'mix': {
+      const r=Math.random();
+      if(r<0.34) return genAdd(min,max);
+      if(r<0.67) return genSub(min,max);
+      return genMul();
+    }
+    case 'make10': return genMake10();
+    default: return genAdd(min,max);
+  }
+}
+
+function swapExpr(p){
+  if(p.op==='+') return `${p.b}+${p.a}`;
+  if(p.op==='×') return `${p.b}×${p.a}`;
+  return null;
+}
+
+function buildChain(mode, min, max){
+  const problems=[];
+  for(let i=0;i<11;i++) problems.push(genProblem(mode,min,max));
+
+  const tiles=[];
+  tiles.push({left:'Start', right: problems[0].expr});
+
+  for(let i=1;i<=9;i++){
+    const prev=problems[i-1];
+    const canSwap = (prev.op==='+' || prev.op==='×');
+    const showSwap = canSwap && Math.random()<0.5;
+    const leftText = showSwap ? swapExpr(prev) : String(prev.value);
+    tiles.push({left:leftText, right: problems[i].expr});
+  }
+
+  const last = problems[9];
+  const canSwapLast = (last.op==='+' || last.op==='×');
+  const showSwapLast = canSwapLast && Math.random()<0.5;
+  const leftTextLast = showSwapLast ? swapExpr(last) : String(last.value);
+  tiles.push({left:leftTextLast, right: problems[10].expr});
+
+  // this yields 11 tiles so far (Start-tile + 9 mid + last); we need 12 total with Finish tile
+  const finLast = problems[10];
+  const canSwapFin = (finLast.op==='+' || finLast.op==='×');
+  const showSwapFin = canSwapFin && Math.random()<0.5;
+  const finLeft = showSwapFin ? swapExpr(finLast) : String(finLast.value);
+  tiles.push({left: finLeft, right:'Finish'});
+
+  return tiles;
+}
+
+function shuffleForPrint(tiles){
+  const arr = tiles.map(t=>{
+    if(Math.random()<0.5) return {left:t.right, right:t.left};
+    return {left:t.left, right:t.right};
+  });
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ============================================================
+// UI wiring
+// ============================================================
+const opDescMap = {
+  add: '0~설정 범위 안의 수로 <b>덧셈식</b>만 나와요.',
+  sub: '0~설정 범위 안의 수로 <b>뺄셈식</b>만 나와요.',
+  addsub: '설정 범위 안의 수로 <b>덧셈식과 뺄셈식</b>이 섞여 나와요.',
+  mul: '<b>곱셈식(구구단)</b>과 <b>덧셈식</b>이 섞여 나와요.',
+  mix: '<b>덧셈·뺄셈·곱셈</b> 세 종류가 모두 섞여 나와요.',
+  make10: '0~10 사이의 수로 <b>10 만들기(예: 2+8)</b>와 <b>10에서 빼기(예: 10-9)</b>만 나와요. (범위 설정 무시, 0~10 고정)'
+};
+
+const opType = document.getElementById('opType');
+const minNum = document.getElementById('minNum');
+const maxNum = document.getElementById('maxNum');
+const rangeHint = document.getElementById('rangeHint');
+const opDesc = document.getElementById('opDesc');
+const genBtn = document.getElementById('genBtn');
+const pdfBtn = document.getElementById('pdfBtn');
+const statusText = document.getElementById('statusText');
+const sheetShell = document.getElementById('sheetShell');
+
+function refreshOpDesc(){
+  const mode = opType.value;
+  opDesc.innerHTML = opDescMap[mode];
+  const isMake10 = mode==='make10';
+  minNum.disabled = isMake10;
+  maxNum.disabled = isMake10;
+  if(isMake10){
+    minNum.value=0; maxNum.value=10;
+    rangeHint.textContent = '10 만들기 모드에서는 범위가 자동으로 0~10으로 고정돼요.';
+  } else {
+    rangeHint.textContent = '문제와 정답에 나오는 모든 숫자가 이 범위 안에서 만들어져요.';
+  }
+}
+opType.addEventListener('change', refreshOpDesc);
+refreshOpDesc();
+
+let currentTilesShuffled = null;
+
+function fitClass(text){
+  const len = String(text).length;
+  if(len>=7) return 'longtext2';
+  if(len>=5) return 'longtext';
+  return '';
+}
+
+function renderSheet(tiles){
+  const cols=2, rows=6;
+  const gapX=7, gapY=5.5; // mm
+  const gridW=180, gridH=262; // approx available mm (matches #grid1 box)
+  const pieceW=(gridW - gapX*(cols-1))/cols;
+  const pieceH=(gridH - gapY*(rows-1))/rows;
+
+  let piecesHtml='';
+  tiles.forEach((t,i)=>{
+    const row=Math.floor(i/cols), col=i%cols;
+    const x=col*(pieceW+gapX);
+    const y=row*(pieceH+gapY);
+    piecesHtml += `
+      <div class="piece" style="left:${x.toFixed(1)}mm; top:${y.toFixed(1)}mm; width:${pieceW.toFixed(1)}mm; height:${pieceH.toFixed(1)}mm;">
+        <div class="tag">✂ ${i+1}</div>
+        <div class="cellrow">
+          <div class="cell left ${fitClass(t.left)}">${t.left}</div>
+          <div class="cell right ${fitClass(t.right)}">${t.right}</div>
+        </div>
+      </div>`;
+  });
+
+  const modeLabel = document.getElementById('opType').selectedOptions[0].textContent;
+  const rangeLabel = opType.value==='make10' ? '0~10' : `${minNum.value}~${maxNum.value}`;
+
+  const html = `
+    <div id="sheet">
+      <div class="badge">${modeLabel} · 범위 ${rangeLabel}</div>
+      <div class="headrow">
+        <div class="title">도미노 연산 퍼즐 - 문제지 (오려 쓰기)</div>
+        <div class="namefield">이름: ______________&nbsp;&nbsp;&nbsp;날짜: ______________</div>
+      </div>
+      <hr class="hr">
+      <div id="grid1">${piecesHtml}</div>
+      <div class="footer">킨더수학 팩토 · 도미노 연산 퍼즐</div>
+    </div>`;
+
+  sheetShell.innerHTML = html;
+}
+
+genBtn.addEventListener('click', ()=>{
+  let min = parseInt(minNum.value,10);
+  let max = parseInt(maxNum.value,10);
+  if(isNaN(min)) min=0;
+  if(isNaN(max)) max=10;
+  if(opType.value==='make10'){ min=0; max=10; }
+  if(min>max){ const tmp=min; min=max; max=tmp; minNum.value=min; maxNum.value=max; }
+
+  const mode = opType.value;
+  const chain = buildChain(mode, min, max);
+  currentTilesShuffled = shuffleForPrint(chain);
+  renderSheet(currentTilesShuffled);
+  pdfBtn.disabled = false;
+  statusText.textContent = '퍼즐이 생성되었습니다. 필요하면 다시 눌러 새로 만들 수 있어요.';
+});
+
+pdfBtn.addEventListener('click', async ()=>{
+  const sheetEl = document.getElementById('sheet');
+  if(!sheetEl) return;
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    statusText.textContent = 'PDF 라이브러리를 불러오지 못했습니다. vendor 폴더 경로를 확인해 주세요.';
+    return;
+  }
+  pdfBtn.disabled = true;
+  const prevLabel = pdfBtn.textContent;
+  pdfBtn.textContent = '⏳ PDF 생성 중...';
+  statusText.textContent = 'PDF를 만들고 있어요...';
+  try{
+    if(document.fonts && document.fonts.ready){
+      await document.fonts.ready;
+    }
+    const canvas = await html2canvas(sheetEl, {scale:3, backgroundColor:'#ffffff', useCORS:true});
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+    pdf.save('도미노_연산퍼즐_문제지.pdf');
+    statusText.textContent = 'PDF 다운로드가 완료되었습니다.';
+  }catch(e){
+    console.error(e);
+    statusText.textContent = 'PDF 생성 중 오류가 발생했습니다: ' + (e && e.message ? e.message : e);
+  }finally{
+    pdfBtn.disabled = false;
+    pdfBtn.textContent = prevLabel;
+  }
+});
+</script>
+</body>
+</html>
