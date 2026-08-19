@@ -232,12 +232,13 @@
   .deck{
     flex:1 1 auto;
     min-width:0;
-    display:flex;
-    flex-wrap:wrap;
+    display:grid;
+    grid-template-columns:repeat(2, var(--card-w,128px));
+    grid-auto-rows:var(--card-h,64px);
     align-content:center;
     justify-content:center;
     gap:10px;
-    padding:10px;
+    padding:16px 10px;
     background:#fff;
     border-radius:10px;
     border:1px solid rgba(0,0,0,0.08);
@@ -754,7 +755,15 @@ function buildChain(mode, min, max){
 }
 
 function shuffleForPrint(tiles){
-  const arr = tiles.map(t=>{
+  const arr = tiles.map((t,i)=>{
+    // The '끝' tile is glued down last and its slot position never changes,
+    // so unlike every other tile it must never be randomly left/right
+    // flipped: flipping a Korean word (unlike a digit or operator) makes it
+    // unreadable, so it always has to print in exactly the orientation
+    // MAT_SWAP expects for its slot - matching without needing a flip.
+    if(t.left==='끝' || t.right==='끝'){
+      return MAT_SWAP[i] ? {left:t.right, right:t.left} : {left:t.left, right:t.right};
+    }
     if(Math.random()<0.5) return {left:t.right, right:t.left};
     return {left:t.left, right:t.right};
   });
@@ -976,38 +985,34 @@ function playFitClass(text){
   return '';
 }
 
-function measureEl(el, insetW, insetH){
-  return { w: Math.max(0, el.clientWidth - insetW), h: Math.max(0, el.clientHeight - insetH) };
-}
+// The deck's 12 cards are laid out in a fixed 2-column x 6-row grid (same
+// shape as the print sheet's cutting layout), with each card sized 2 units
+// wide x 1 unit tall - i.e. each card HALF (one domino cell) is a unit x
+// unit square, exactly like a mat slot cell. Deriving both the deck's card
+// size and the mat's slot size from the same shared `unit` keeps the two
+// visually proportionate instead of each maximizing independently (which
+// used to leave the mat tiny next to oversized cards, or vice versa).
+const PLAY_PAD = 14, PLAY_GAP = 14, MAT_WRAP_PAD = 10;
+const DECK_COLS = 2, DECK_ROWS = 6, DECK_PAD_H = 10, DECK_PAD_V = 16, CARD_GAP = 10;
 
-function computeMatUnit(availW, availH){
-  const unit = Math.floor(Math.min(availW/MAT_COLS, availH/MAT_ROWS));
-  return Math.max(28, isFinite(unit) && unit>0 ? unit : 64);
+function computeSharedUnit(totalW, totalH){
+  const fromMatHeight = (totalH - MAT_WRAP_PAD*2) / MAT_ROWS;
+  const fromDeckHeight = (totalH - DECK_PAD_V*2 - (DECK_ROWS-1)*CARD_GAP) / DECK_ROWS;
+  const fromWidth = (totalW - PLAY_GAP - MAT_WRAP_PAD*2 - DECK_PAD_H*2 - (DECK_COLS-1)*CARD_GAP)
+                     / (MAT_COLS + DECK_COLS*2);
+  const unit = Math.floor(Math.min(fromMatHeight, fromDeckHeight, fromWidth));
+  return Math.max(28, isFinite(unit) && unit>0 ? unit : 28);
 }
-
-// The mat's shape (6x9 units) is much taller than wide, so a naive 50/50
-// width split with the deck leaves most of the mat's box unused (height is
-// almost always the binding constraint). Give the mat exactly the box it
-// needs to use the FULL available height, then let the deck take whatever
-// width remains (with a minimum so the deck never gets crushed).
-const PLAY_PAD = 14, PLAY_GAP = 14, MAT_WRAP_PAD = 10, MIN_DECK_W = 300;
 
 function fitPlayArea(){
   const playArea = document.getElementById('playArea');
-  const totalW = Math.max(0, playArea.clientWidth - PLAY_PAD*2 - PLAY_GAP);
+  const totalW = Math.max(0, playArea.clientWidth - PLAY_PAD*2);
   const totalH = Math.max(0, playArea.clientHeight - PLAY_PAD*2);
   if(totalW<=0 || totalH<=0){
     return { unit:64, matBoxW: MAT_COLS*64 + MAT_WRAP_PAD*2 };
   }
-
-  let unit = computeMatUnit(1e6, totalH - MAT_WRAP_PAD*2); // height-only ideal size
-  let matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
-
-  if(totalW - matBoxW < MIN_DECK_W){
-    const budget = Math.max(MAT_COLS*28 + MAT_WRAP_PAD*2, totalW - MIN_DECK_W);
-    unit = computeMatUnit(budget - MAT_WRAP_PAD*2, totalH - MAT_WRAP_PAD*2);
-    matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
-  }
+  const unit = computeSharedUnit(totalW, totalH);
+  const matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
   return { unit, matBoxW };
 }
 
@@ -1040,32 +1045,9 @@ function buildMatSlotData(chain, unit){
   });
 }
 
-function computeCardFit(availW, availH){
-  const n = 12, gap = 10;
-  let best = null;
-  for(let cols=1; cols<=n; cols++){
-    const rows = Math.ceil(n/cols);
-    const cardW = (availW-(cols-1)*gap)/cols;
-    const cardH = cardW/2;
-    const neededH = rows*cardH + (rows-1)*gap;
-    if(cardW<=0) continue;
-    if(neededH<=availH){
-      if(!best || cardW>best.cardW) best = {cols, rows, cardW, cardH};
-    }
-  }
-  if(!best){
-    const cols = n;
-    const cardW = Math.max(60, (availW-(cols-1)*gap)/cols);
-    best = {cols, rows:1, cardW, cardH:cardW/2};
-  }
-  return best;
-}
-
-function fitDeckSizing(){
+function fitDeckSizing(unit){
   const deck = document.getElementById('deck');
-  const {w,h} = measureEl(deck, 4, 4);
-  if(w<=0 || h<=0) return;
-  const {cardW, cardH} = computeCardFit(w,h);
+  const cardW = unit*2, cardH = unit;
   deck.style.setProperty('--card-w', cardW+'px');
   deck.style.setProperty('--card-h', cardH+'px');
   deck.style.setProperty('--card-font', Math.max(11, cardH*0.22)+'px');
@@ -1116,7 +1098,7 @@ function resetBoard(){
   playState.placementHistory = [];
 
   renderDeck();
-  fitDeckSizing();
+  fitDeckSizing(playState.matUnit);
   renderMatBoard();
   activateSlot(0);
 }
@@ -1141,7 +1123,7 @@ function removeLastPlacedCard(){
   playState.requiredValue = entry.prevRequiredValue;
 
   renderDeck();
-  fitDeckSizing();
+  fitDeckSizing(playState.matUnit);
   activateSlot(entry.slotIndex);
 
   const prevEntry = playState.placementHistory[playState.placementHistory.length-1];
@@ -1204,7 +1186,7 @@ function refitPlayLayout(){
   document.getElementById('matBoardWrap').style.width = fit.matBoxW+'px';
   playState.matUnit = fit.unit;
 
-  fitDeckSizing(); // measured AFTER matBoardWrap's width is (re)set
+  fitDeckSizing(fit.unit);
 
   const {geo, maxW, maxH} = layoutMatGeometry(fit.unit);
   const board = document.getElementById('matBoard');
