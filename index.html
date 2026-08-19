@@ -233,7 +233,7 @@
     flex:1 1 auto;
     min-width:0;
     display:grid;
-    grid-template-columns:repeat(2, var(--card-w,128px));
+    grid-template-columns:repeat(var(--deck-cols,2), var(--card-w,128px));
     grid-auto-rows:var(--card-h,64px);
     align-content:center;
     justify-content:center;
@@ -985,21 +985,27 @@ function playFitClass(text){
   return '';
 }
 
-// The deck's 12 cards are laid out in a fixed 2-column x 6-row grid (same
-// shape as the print sheet's cutting layout), with each card sized 2 units
-// wide x 1 unit tall - i.e. each card HALF (one domino cell) is a unit x
-// unit square, exactly like a mat slot cell. Deriving both the deck's card
-// size and the mat's slot size from the same shared `unit` keeps the two
-// visually proportionate instead of each maximizing independently (which
-// used to leave the mat tiny next to oversized cards, or vice versa).
+// Each of the deck's 12 cards is sized 2 units wide x 1 unit tall - i.e.
+// each card HALF (one domino cell) is a unit x unit square, exactly like a
+// mat slot cell. Deriving both the deck's card size and the mat's slot size
+// from the same shared `unit` keeps the two visually proportionate instead
+// of each maximizing independently (which used to leave the mat tiny next
+// to oversized cards, or vice versa).
+//
+// The deck's COLUMN COUNT, unlike the unit, is not fixed - a fixed 2-column
+// grid left a large empty gap next to the cards on wide screens. Instead the
+// baseline unit is computed assuming a conservative 2-column x 6-row deck
+// (guaranteeing that much always fits), and then the deck claims as many
+// columns as its actual leftover width allows, so wide screens spread the
+// same-sized cards into 3, 4, even 6 columns instead of leaving blank space.
 const PLAY_PAD = 14, PLAY_GAP = 14, MAT_WRAP_PAD = 10;
-const DECK_COLS = 2, DECK_ROWS = 6, DECK_PAD_H = 10, DECK_PAD_V = 16, CARD_GAP = 10;
+const DECK_MIN_COLS = 2, DECK_BASELINE_ROWS = 6, DECK_PAD_H = 10, DECK_PAD_V = 16, CARD_GAP = 10;
 
 function computeSharedUnit(totalW, totalH){
   const fromMatHeight = (totalH - MAT_WRAP_PAD*2) / MAT_ROWS;
-  const fromDeckHeight = (totalH - DECK_PAD_V*2 - (DECK_ROWS-1)*CARD_GAP) / DECK_ROWS;
-  const fromWidth = (totalW - PLAY_GAP - MAT_WRAP_PAD*2 - DECK_PAD_H*2 - (DECK_COLS-1)*CARD_GAP)
-                     / (MAT_COLS + DECK_COLS*2);
+  const fromDeckHeight = (totalH - DECK_PAD_V*2 - (DECK_BASELINE_ROWS-1)*CARD_GAP) / DECK_BASELINE_ROWS;
+  const fromWidth = (totalW - PLAY_GAP - MAT_WRAP_PAD*2 - DECK_PAD_H*2 - (DECK_MIN_COLS-1)*CARD_GAP)
+                     / (MAT_COLS + DECK_MIN_COLS*2);
   const unit = Math.floor(Math.min(fromMatHeight, fromDeckHeight, fromWidth));
   return Math.max(28, isFinite(unit) && unit>0 ? unit : 28);
 }
@@ -1009,11 +1015,14 @@ function fitPlayArea(){
   const totalW = Math.max(0, playArea.clientWidth - PLAY_PAD*2);
   const totalH = Math.max(0, playArea.clientHeight - PLAY_PAD*2);
   if(totalW<=0 || totalH<=0){
-    return { unit:64, matBoxW: MAT_COLS*64 + MAT_WRAP_PAD*2 };
+    return { unit:64, matBoxW: MAT_COLS*64 + MAT_WRAP_PAD*2, deckCols: DECK_MIN_COLS };
   }
   const unit = computeSharedUnit(totalW, totalH);
   const matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
-  return { unit, matBoxW };
+  const deckContentW = totalW - PLAY_GAP - matBoxW - DECK_PAD_H*2;
+  const colsFit = Math.floor((deckContentW + CARD_GAP) / (unit*2 + CARD_GAP));
+  const deckCols = Math.max(DECK_MIN_COLS, Math.min(12, colsFit));
+  return { unit, matBoxW, deckCols };
 }
 
 function layoutMatGeometry(unit){
@@ -1045,12 +1054,13 @@ function buildMatSlotData(chain, unit){
   });
 }
 
-function fitDeckSizing(unit){
+function fitDeckSizing(unit, cols){
   const deck = document.getElementById('deck');
   const cardW = unit*2, cardH = unit;
   deck.style.setProperty('--card-w', cardW+'px');
   deck.style.setProperty('--card-h', cardH+'px');
   deck.style.setProperty('--card-font', Math.max(11, cardH*0.22)+'px');
+  deck.style.setProperty('--deck-cols', cols);
 }
 
 let playState = null;
@@ -1074,6 +1084,7 @@ function renderPlayBoard(chain, difficulty){
     deckCards: null,
     matSlotData: buildMatSlotData(chain, fit.unit),
     matUnit: fit.unit,
+    deckCols: fit.deckCols,
     currentActiveIndex: 0,
     filledCount: 0,
     requiredValue: 'START'
@@ -1098,7 +1109,7 @@ function resetBoard(){
   playState.placementHistory = [];
 
   renderDeck();
-  fitDeckSizing(playState.matUnit);
+  fitDeckSizing(playState.matUnit, playState.deckCols);
   renderMatBoard();
   activateSlot(0);
 }
@@ -1123,7 +1134,7 @@ function removeLastPlacedCard(){
   playState.requiredValue = entry.prevRequiredValue;
 
   renderDeck();
-  fitDeckSizing(playState.matUnit);
+  fitDeckSizing(playState.matUnit, playState.deckCols);
   activateSlot(entry.slotIndex);
 
   const prevEntry = playState.placementHistory[playState.placementHistory.length-1];
@@ -1185,8 +1196,9 @@ function refitPlayLayout(){
   const fit = fitPlayArea();
   document.getElementById('matBoardWrap').style.width = fit.matBoxW+'px';
   playState.matUnit = fit.unit;
+  playState.deckCols = fit.deckCols;
 
-  fitDeckSizing(fit.unit);
+  fitDeckSizing(fit.unit, fit.deckCols);
 
   const {geo, maxW, maxH} = layoutMatGeometry(fit.unit);
   const board = document.getElementById('matBoard');
