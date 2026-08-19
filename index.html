@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>도미노 연산 퍼즐 생성기</title>
+<title>도미노 연산 퍼즐 - 화면 활동</title>
 <style>
   @font-face{
     font-family:"Noto Sans KR";
@@ -32,129 +32,90 @@
     --danger:#b5533c;
   }
   *{box-sizing:border-box;}
+  html,body{height:100%;}
+  /* the `hidden` attribute must always win over any competing `display`
+     rule below (e.g. `.empty-hint{display:flex}`) - without !important,
+     an author rule of equal specificity beats the UA's `[hidden]{display:none}` */
+  [hidden]{display:none !important;}
   body{
     margin:0;
     font-family:"Noto Sans KR","Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
-    background:
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0) 0 0/22px 22px,
-      var(--chalk-green);
+    background:var(--chalk-green);
     color:var(--ink);
-    min-height:100vh;
-    padding:28px 16px 60px;
-  }
-  .wrap{max-width:980px;margin:0 auto;}
-
-  header.hero{
-    text-align:left;
-    color:#fbf7ea;
-    margin-bottom:22px;
-    padding:2px 4px;
-  }
-  header.hero .eyebrow{
-    font-size:12.5px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--mustard);
-    font-weight:700;
-    margin-bottom:6px;
-  }
-  header.hero h1{
-    font-size:30px;
-    margin:0 0 8px;
-    font-weight:800;
-    letter-spacing:-0.01em;
-  }
-  header.hero p{
-    margin:0;
-    color:#d8dfd7;
-    font-size:14.5px;
-    max-width:640px;
-    line-height:1.55;
-  }
-
-  .panel{
-    background:var(--paper);
-    border-radius:16px;
-    box-shadow:0 18px 40px rgba(0,0,0,0.28);
+    height:100vh;
     overflow:hidden;
-    border:1px solid rgba(0,0,0,0.06);
+    display:flex;
+    flex-direction:column;
   }
 
-  .controls{
-    padding:22px 24px;
-    background:
-      linear-gradient(var(--paper),var(--paper)) padding-box,
-      repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px) padding-box;
-    border-bottom:2px dashed #c9bd97;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px 28px;
+  /* ===== compact top bar: title + all controls + tabs, one line (wraps to 2 on narrow) ===== */
+  .topbar{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px 14px;
+    padding:8px 16px;
+    background:linear-gradient(135deg,var(--chalk-green-dark),var(--chalk-green));
+    box-shadow:0 2px 10px rgba(0,0,0,.25);
   }
-  @media (max-width:680px){ .controls{grid-template-columns:1fr;} }
-
-  .field label{
-    display:block;
-    font-size:12.5px;
+  .topbar-title{
+    font-size:15px;
+    font-weight:800;
+    color:#fbf7ea;
+    letter-spacing:-.01em;
+    white-space:nowrap;
+  }
+  .topbar-controls{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px 12px;
+    flex:1 1 auto;
+  }
+  .tb-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:#fff;
+    border-radius:8px;
+    padding:5px 10px;
+    box-shadow:0 2px 0 rgba(0,0,0,.12);
+  }
+  .tb-field label{
+    font-size:11.5px;
     font-weight:800;
     color:var(--chalk-green-dark);
-    letter-spacing:.03em;
-    margin-bottom:8px;
+    white-space:nowrap;
   }
-  .field .hint{
-    font-size:11.5px;
-    color:var(--muted);
-    margin-top:6px;
-    line-height:1.4;
-  }
-
-  .range-row{display:flex;align-items:center;gap:10px;}
-  .range-row input[type=number]{
-    width:84px;
-    padding:9px 10px;
-    border-radius:9px;
-    border:1.5px solid #cfc6a3;
+  .tb-field input[type=number]{
+    width:46px;
+    padding:3px 4px;
+    border-radius:5px;
+    border:1px solid #cfc6a3;
     background:#fff;
-    font-size:15px;
+    font-size:13px;
     font-weight:700;
     color:var(--ink);
     text-align:center;
   }
-  .range-row input[type=number]:disabled{
+  .tb-field input[type=number]:disabled{
     background:#efece2;
     color:#a8a190;
   }
-  .range-row span.tilde{color:var(--muted);font-weight:700;}
+  .tb-field .tilde{color:var(--muted);font-weight:700;font-size:12px;}
 
-  select#opType{
-    width:100%;
-    padding:10px 12px;
-    border-radius:9px;
-    border:1.5px solid #cfc6a3;
+  .topbar select#opType{
+    padding:6px 8px;
+    border-radius:8px;
+    border:none;
     background:#fff;
-    font-size:15px;
+    font-size:13px;
     font-weight:700;
     color:var(--ink);
+    box-shadow:0 2px 0 rgba(0,0,0,.12);
   }
 
-  .opdesc{
-    margin-top:10px;
-    font-size:12.5px;
-    color:var(--chalk-green-dark);
-    background:#f0ead4;
-    border:1px solid #ddd2a8;
-    border-radius:8px;
-    padding:8px 10px;
-    line-height:1.5;
-  }
-
-  .actions{
-    padding:16px 24px 22px;
-    display:flex;
-    gap:12px;
-    align-items:center;
-    flex-wrap:wrap;
-    border-bottom:1px solid #eee6cd;
-  }
   button{
     font-family:inherit;
     cursor:pointer;
@@ -173,6 +134,11 @@
     box-shadow:0 6px 0 var(--mustard-dark);
   }
   #genBtn:hover{filter:brightness(1.04);}
+  .topbar #genBtn{
+    padding:8px 16px;
+    font-size:13px;
+    box-shadow:0 3px 0 var(--mustard-dark);
+  }
   #pdfBtn{
     background:var(--chalk-green-dark);
     color:#fbf7ea;
@@ -184,13 +150,270 @@
     box-shadow:0 6px 0 #b3ad9c;
     cursor:not-allowed;
   }
-  .status{
+  #retryBtn{
+    background:var(--mustard);
+    color:#3a2a08;
+    box-shadow:0 6px 0 var(--mustard-dark);
+  }
+  #retryBtn:hover{filter:brightness(1.04);}
+
+  .tabbar{
+    display:flex;
+    gap:4px;
+    background:rgba(0,0,0,.18);
+    padding:3px;
+    border-radius:9px;
+  }
+  .tab-btn{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    background:transparent;
+    padding:6px 12px;
     font-size:12.5px;
-    color:var(--muted);
+    font-weight:800;
+    color:#d8dfd7;
+    border-radius:6px;
+  }
+  .tab-btn.active{
+    color:#3a2a08;
+    background:var(--mustard);
+  }
+
+  .status{
+    font-size:11.5px;
+    color:#d8dfd7;
     margin-left:auto;
   }
 
+  /* ===== paper panel filling the remaining viewport ===== */
+  .panel{
+    flex:1 1 auto;
+    min-height:0;
+    margin:10px;
+    border-radius:14px;
+    background:var(--paper);
+    box-shadow:0 14px 32px rgba(0,0,0,.28);
+    border:1px solid rgba(0,0,0,.06);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .tab-panel{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .tab-panel[hidden]{display:none;}
+
+  .empty-hint{
+    flex:1 1 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.7;
+  }
+  .empty-hint b{color:var(--chalk-green-dark);}
+
+  /* ===== screen activity: deck + mat, sized dynamically to fill available space ===== */
+  .play-area{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    gap:14px;
+    padding:14px;
+  }
+  .deck{
+    flex:1 1 auto;
+    min-width:0;
+    display:flex;
+    flex-wrap:wrap;
+    align-content:center;
+    justify-content:center;
+    gap:10px;
+    padding:10px;
+    background:#fff;
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,0.08);
+    overflow:hidden;
+  }
+  .mat-board-wrap{
+    position:relative;
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    background:#fff;
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,0.08);
+    overflow:hidden;
+  }
+  #restartBtn{
+    position:absolute;
+    /* top-left: the snake shape's slot 0 starts top-right (MAT_LAYOUT),
+       so the top-left corner of the mat is always empty space here */
+    top:8px; left:8px;
+    z-index:5;
+    padding:6px 12px;
+    font-size:12px;
+    background:var(--chalk-green-dark);
+    color:#fbf7ea;
+    box-shadow:0 3px 0 #16241d;
+  }
+  #restartBtn:hover{filter:brightness(1.15);}
+  .mat-board{
+    position:relative;
+  }
+
+  .card{
+    position:relative;
+    width:var(--card-w,128px);
+    height:var(--card-h,64px);
+    font-size:var(--card-font,14px);
+    display:flex;
+    flex:0 0 auto;
+    border:2px solid #3a3a3a;
+    border-radius:6px;
+    background:#fffdf6;
+    box-shadow:0 3px 0 rgba(0,0,0,0.15);
+    cursor:grab;
+    touch-action:none;
+    user-select:none;
+  }
+  .card.dragging{
+    position:fixed;
+    z-index:1000;
+    cursor:grabbing;
+    box-shadow:0 10px 20px rgba(0,0,0,0.3);
+  }
+  .card.wrong{ animation: card-shake .3s ease; }
+  .card .cell{
+    flex:1 1 50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:1em;
+    font-weight:700;
+    padding:2px 4px;
+    line-height:1.15;
+    word-break:keep-all;
+  }
+  .card .cell:first-child{border-right:1px solid #999;}
+
+  .cell.play-longtext{font-size:.79em;}
+  .cell.play-longtext2{font-size:.68em;}
+  .cell.play-longtext3{font-size:.57em; word-break:break-all;}
+
+  @keyframes card-shake{
+    0%,100%{ transform:translateX(0); }
+    25%{ transform:translateX(-6px); }
+    75%{ transform:translateX(6px); }
+  }
+
+  .slot{
+    position:absolute;
+    border:2px dashed #b7ad8c;
+    border-radius:6px;
+    box-sizing:border-box;
+    background:#faf8f0;
+    display:flex;
+    font-size:var(--mat-font,14px);
+  }
+  .slot.h .cell:first-child{border-right:1px solid #ccc2a0;}
+  .slot.v{flex-direction:column;}
+  .slot.v .cell:first-child{border-bottom:1px solid #ccc2a0;}
+  .slot .cell{
+    flex:1 1 50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1em;
+    font-weight:700;
+    color:#1c1c1c;
+    text-align:center;
+    padding:2px 4px;
+  }
+  .slot.active{
+    border:2.5px dashed var(--mustard);
+    box-shadow:0 0 0 4px rgba(217,164,65,0.25);
+    animation: slot-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes slot-pulse{
+    0%,100%{ box-shadow:0 0 0 3px rgba(217,164,65,0.2); }
+    50%{ box-shadow:0 0 0 7px rgba(217,164,65,0.35); }
+  }
+  .slot.filled{
+    border:2px solid #3a3a3a;
+    background:#fffdf6;
+    animation: slot-snap .25s ease;
+  }
+  .slot.removable{ cursor:pointer; }
+  .slot.removable:hover{ filter:brightness(0.93); }
+  .slot.removable::after{
+    content:"✕";
+    position:absolute;
+    top:2px; right:2px;
+    width:17px; height:17px;
+    line-height:17px;
+    text-align:center;
+    font-size:11px;
+    font-weight:800;
+    color:#fff;
+    background:var(--danger);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  @keyframes slot-snap{
+    0%{ transform:scale(0.85); }
+    60%{ transform:scale(1.05); }
+    100%{ transform:scale(1); }
+  }
+
+  .celebrate-overlay{
+    position:fixed; inset:0;
+    background:rgba(34,57,47,0.72);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000;
+  }
+  .celebrate-overlay[hidden]{display:none;}
+  #confettiCanvas{
+    position:fixed; inset:0;
+    width:100%; height:100%;
+    pointer-events:none;
+  }
+  .celebrate-msg{
+    position:relative;
+    z-index:1;
+    background:var(--paper);
+    border-radius:16px;
+    padding:36px 44px;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+  .celebrate-title{font-size:28px; font-weight:800; color:var(--chalk-green-dark); margin-bottom:8px;}
+  .celebrate-sub{font-size:14px; color:var(--muted); margin-bottom:20px;}
+
+  /* ===== print tab shell (content itself is untouched; only made to fit/scroll here) ===== */
+  .actions{
+    padding:16px 24px 22px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+    border-bottom:1px solid #eee6cd;
+  }
   .preview-area{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:auto;
     padding:24px;
     background:#efe9d8;
     display:flex;
@@ -332,66 +555,69 @@
     position:absolute; bottom:5mm; left:0; right:0;
     text-align:center; font-size:7.6pt; color:#9a9a9a;
   }
-
-  .empty-hint{
-    padding:60px 20px;
-    text-align:center;
-    color:var(--muted);
-    font-size:14px;
-    line-height:1.7;
-  }
-  .empty-hint b{color:var(--chalk-green-dark);}
-
-  footer.note{
-    text-align:center;
-    color:#d8dfd7;
-    font-size:11.5px;
-    margin-top:18px;
-    opacity:.75;
-  }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header class="hero">
-    <div class="eyebrow">도미노 연산 퍼즐</div>
-    <h1>도미노 연산 퍼즐 생성기</h1>
-    <p>수의 범위와 연산식 종류를 고르면 시작부터 끝까지 이어지는 12조각 도미노 체인을 만들어요. 확인 후 문제지를 PDF(문제지·붙임판·정답 3쪽)로 내려받으세요.</p>
-  </header>
-
-  <div class="panel">
-    <div class="controls">
-      <div class="field">
-        <label for="minNum">수의 범위</label>
-        <div class="range-row">
-          <input type="number" id="minNum" value="0" min="0" max="1000">
-          <span class="tilde">~</span>
-          <input type="number" id="maxNum" value="10" min="0" max="1000">
-        </div>
-        <div class="hint" id="rangeHint">문제와 정답에 나오는 모든 숫자가 이 범위 안에서 만들어져요.</div>
-      </div>
-
-      <div class="field">
-        <label for="opType">연산식 종류</label>
-        <select id="opType">
-          <option value="add">덧셈</option>
-          <option value="sub">뺄셈</option>
-          <option value="addsub" selected>덧셈+뺄셈</option>
-          <option value="mul">곱셈</option>
-          <option value="mix">혼합 (덧셈·뺄셈·곱셈)</option>
-          <option value="make10">10 만들기</option>
-        </select>
-        <div class="opdesc" id="opDesc"></div>
-      </div>
+<header class="topbar">
+  <div class="topbar-title">🧩 도미노 연산 퍼즐</div>
+  <div class="topbar-controls">
+    <div class="tb-field">
+      <label for="minNum">범위</label>
+      <input type="number" id="minNum" value="0" min="0" max="1000">
+      <span class="tilde">~</span>
+      <input type="number" id="maxNum" value="10" min="0" max="1000">
     </div>
 
+    <div class="tb-field">
+      <label for="opType">연산식</label>
+      <select id="opType">
+        <option value="add">덧셈</option>
+        <option value="sub">뺄셈</option>
+        <option value="addsub" selected>덧셈+뺄셈</option>
+        <option value="mul">곱셈</option>
+        <option value="mix">혼합</option>
+        <option value="make10">10 만들기</option>
+      </select>
+    </div>
+
+    <div class="tb-field">
+      <label for="difficulty">난이도</label>
+      <select id="difficulty">
+        <option value="beginner" selected>초급</option>
+        <option value="intermediate">중급</option>
+      </select>
+    </div>
+
+    <button id="genBtn">🎲 퍼즐 생성</button>
+
+    <div class="tabbar">
+      <button class="tab-btn active" data-tab="play" type="button">🖱 화면 활동</button>
+      <button class="tab-btn" data-tab="print" type="button">🖨 인쇄용 문제지</button>
+    </div>
+
+    <span class="status" id="statusText"></span>
+  </div>
+</header>
+
+<div class="panel">
+  <div class="tab-panel" id="tabPlay">
+    <div class="empty-hint" id="playEmptyHint">
+      <b>퍼즐 생성</b> 버튼을 누르면<br>문제카드와 붙임판이 여기 나타나요.
+    </div>
+    <div class="play-area" id="playArea" hidden>
+      <div class="deck" id="deck"></div>
+      <div class="mat-board-wrap" id="matBoardWrap">
+        <button id="restartBtn" type="button" title="문제카드를 다시 원래 자리로 되돌립니다">↺ 다시 시작</button>
+        <div class="mat-board" id="matBoard"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tabPrint" hidden>
     <div class="actions">
-      <button id="genBtn">🎲 퍼즐 생성</button>
       <button id="pdfBtn" disabled>⬇ PDF로 다운로드</button>
-      <span class="status" id="statusText"></span>
     </div>
-
     <div class="preview-area">
       <div class="sheet-shell" id="sheetShell">
         <div class="empty-hint" id="emptyHint">
@@ -400,8 +626,15 @@
       </div>
     </div>
   </div>
+</div>
 
-  <footer class="note">화면 미리보기는 실제 A4 크기(210×297mm)로 렌더링되며, PDF도 동일한 배치로 3쪽(문제지·붙임판·정답)에 걸쳐 저장됩니다.</footer>
+<div class="celebrate-overlay" id="celebrateOverlay" hidden>
+  <canvas id="confettiCanvas"></canvas>
+  <div class="celebrate-msg">
+    <div class="celebrate-title">🎉 완성했어요! 🎉</div>
+    <div class="celebrate-sub">시작부터 끝까지 12조각을 모두 이었어요.</div>
+    <button id="retryBtn" type="button">🔄 다시 도전</button>
+  </div>
 </div>
 
 <script>
@@ -473,46 +706,49 @@ function swapExpr(p){
 }
 
 function repeatedAddExpr(p){
-  // e.g. 4x5 -> pick the smaller factor as the term COUNT, the larger as the term VALUE,
-  // so 4x5 becomes 5+5+5+5 (4 terms) rather than 5 terms of 4 - keeps it a bit shorter either way,
-  // but always mathematically equal to a*b.
-  const count = Math.min(p.a, p.b);
-  const term = Math.max(p.a, p.b);
-  return Array(count).fill(term).join('+');
+  // a×b is taught as "a를 b번 더한 것" (a added together b times) - always
+  // repeat p.a exactly p.b times, regardless of which factor is larger.
+  return Array(p.b).fill(p.a).join('+');
 }
 
 // Picks how to display the connector cell that links to the PREVIOUS problem's answer.
 // '-' (subtraction) only ever shows the plain value (no commutative form exists).
-// '+' alternates between the plain value and a commutative swap.
-// '×' alternates between the plain value, a commutative swap, and a repeated-addition form.
+// '+' mostly shows the plain value, occasionally a commutative swap.
+// '×' balances the plain value and the repeated-addition form, with the
+// commutative swap deliberately rarer than either (it was overused before).
 function connectorText(p){
   if(p.op==='-') return String(p.value);
   if(p.op==='+'){
-    return Math.random()<0.5 ? String(p.value) : swapExpr(p);
+    return Math.random()<0.3 ? swapExpr(p) : String(p.value);
   }
   // '×'
   const r = Math.random();
-  if(r<1/3) return String(p.value);
-  if(r<2/3) return swapExpr(p);
-  return repeatedAddExpr(p);
+  if(r<0.2) return swapExpr(p);
+  if(r<0.6) return repeatedAddExpr(p);
+  return String(p.value);
 }
 
+// leftValue/rightValue carry each tile's connector-in and problem-out as a
+// NUMBER (or the 'START'/'END' sentinel) alongside the display text - used
+// by the screen activity's intermediate difficulty to check whether an
+// arbitrary card's math is valid to place next, independent of which card
+// was originally designed for that exact position.
 function buildChain(mode, min, max){
   const problems=[];
   for(let i=0;i<11;i++) problems.push(genProblem(mode,min,max));
 
   const tiles=[];
-  tiles.push({left:'시작', right: problems[0].expr});
+  tiles.push({left:'시작', right: problems[0].expr, leftValue:'START', rightValue: problems[0].value});
 
   for(let i=1;i<=9;i++){
     const prev=problems[i-1];
-    tiles.push({left: connectorText(prev), right: problems[i].expr});
+    tiles.push({left: connectorText(prev), right: problems[i].expr, leftValue: prev.value, rightValue: problems[i].value});
   }
 
-  tiles.push({left: connectorText(problems[9]), right: problems[10].expr});
+  tiles.push({left: connectorText(problems[9]), right: problems[10].expr, leftValue: problems[9].value, rightValue: problems[10].value});
 
   // this yields 11 tiles so far (시작-tile + 9 mid + last); we need 12 total with 끝 tile
-  tiles.push({left: connectorText(problems[10]), right:'끝'});
+  tiles.push({left: connectorText(problems[10]), right:'끝', leftValue: problems[10].value, rightValue:'END'});
 
   return tiles;
 }
@@ -521,6 +757,35 @@ function shuffleForPrint(tiles){
   const arr = tiles.map(t=>{
     if(Math.random()<0.5) return {left:t.right, right:t.left};
     return {left:t.left, right:t.right};
+  });
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// Deck order for the screen activity: shuffles WHICH slot each of the 12
+// cards belongs to (so students can't just match by position), but always
+// displays each card in the same left/right order its target slot expects
+// (per MAT_SWAP) - never a random flip. The mat's touching sides must show
+// matching values to read as a connected chain; a randomly-flipped card
+// would break that even though the math is still correct, since a placed
+// card renders in its own left/right order (see placeCardInSlot).
+//
+// Alongside the display text, each card also carries its ORIGINAL semantic
+// in/out role (inText/inValue = the connector it needs coming in, outText/
+// outValue = the new problem it hands off) - unaffected by the display
+// swap above. Beginner difficulty only uses the display fields; intermediate
+// difficulty uses the semantic fields to accept any card whose incoming
+// value is valid, not just the one originally designed for that slot.
+function shuffleForPlay(tiles){
+  const arr = tiles.map((t,i)=>{
+    const swap = MAT_SWAP[i];
+    return {
+      left: swap ? t.right : t.left, right: swap ? t.left : t.right,
+      inText: t.left, inValue: t.leftValue, outText: t.right, outValue: t.rightValue
+    };
   });
   for(let i=arr.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -554,7 +819,7 @@ const MAT_LAYOUT = [
 // false = cellA shows tile.left (connector), cellB shows tile.right (new problem)
 const MAT_SWAP = [false,true,true,true,false,false,false,false,false,true,true,true];
 
-const MAT_UNIT = 27; // mm
+const MAT_UNIT = 27; // mm, print-only
 
 function renderMatSlots(tiles, showAnswers){
   let html='';
@@ -590,47 +855,6 @@ function renderMatSlots(tiles, showAnswers){
   });
   return html;
 }
-
-// ============================================================
-// UI wiring
-// ============================================================
-const opDescMap = {
-  add: '0~설정 범위 안의 수로 <b>덧셈식</b>만 나와요.',
-  sub: '0~설정 범위 안의 수로 <b>뺄셈식</b>만 나와요.',
-  addsub: '설정 범위 안의 수로 <b>덧셈식과 뺄셈식</b>이 섞여 나와요.',
-  mul: '<b>곱셈식(구구단)</b>만 나와요. 이어지는 방식은 계산값·교환법칙·반복 덧셈(응용 수식, 예: 4×4→4+4+4+4) 3가지가 골고루 섞여요.',
-  mix: '<b>덧셈·뺄셈·곱셈</b> 세 종류가 모두 섞여 나와요.',
-  make10: '0~10 사이의 수로 <b>10 만들기(예: 2+8)</b>와 <b>10에서 빼기(예: 10-9)</b>만 나와요. (범위 설정 무시, 0~10 고정)'
-};
-
-const opType = document.getElementById('opType');
-const minNum = document.getElementById('minNum');
-const maxNum = document.getElementById('maxNum');
-const rangeHint = document.getElementById('rangeHint');
-const opDesc = document.getElementById('opDesc');
-const genBtn = document.getElementById('genBtn');
-const pdfBtn = document.getElementById('pdfBtn');
-const statusText = document.getElementById('statusText');
-const sheetShell = document.getElementById('sheetShell');
-
-function refreshOpDesc(){
-  const mode = opType.value;
-  opDesc.innerHTML = opDescMap[mode];
-  const isMake10 = mode==='make10';
-  minNum.disabled = isMake10;
-  maxNum.disabled = isMake10;
-  if(isMake10){
-    minNum.value=0; maxNum.value=10;
-    rangeHint.textContent = '10 만들기 모드에서는 범위가 자동으로 0~10으로 고정돼요.';
-  } else {
-    rangeHint.textContent = '문제와 정답에 나오는 모든 숫자가 이 범위 안에서 만들어져요.';
-  }
-}
-opType.addEventListener('change', refreshOpDesc);
-refreshOpDesc();
-
-let currentTilesShuffled = null;
-let currentChain = null;
 
 function fitClass(text){
   const len = String(text).length;
@@ -723,6 +947,621 @@ function renderSheet(tiles){
   `;
 }
 
+// ============================================================
+// Tab switching
+// ============================================================
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tabBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tabPlay').hidden = btn.dataset.tab !== 'play';
+    document.getElementById('tabPrint').hidden = btn.dataset.tab !== 'print';
+    if(btn.dataset.tab === 'play' && playState){
+      refitPlayLayout();
+    }
+  });
+});
+
+// ============================================================
+// Screen activity (play) tab - board data model + dynamic-fit render
+// ============================================================
+const MAT_COLS = 6, MAT_ROWS = 9; // bounding grid of MAT_LAYOUT, used to size slots to fill available space
+
+function playFitClass(text){
+  const len = String(text).length;
+  if(len>=12) return 'play-longtext3';
+  if(len>=7) return 'play-longtext2';
+  if(len>=5) return 'play-longtext';
+  return '';
+}
+
+function measureEl(el, insetW, insetH){
+  return { w: Math.max(0, el.clientWidth - insetW), h: Math.max(0, el.clientHeight - insetH) };
+}
+
+function computeMatUnit(availW, availH){
+  const unit = Math.floor(Math.min(availW/MAT_COLS, availH/MAT_ROWS));
+  return Math.max(28, isFinite(unit) && unit>0 ? unit : 64);
+}
+
+// The mat's shape (6x9 units) is much taller than wide, so a naive 50/50
+// width split with the deck leaves most of the mat's box unused (height is
+// almost always the binding constraint). Give the mat exactly the box it
+// needs to use the FULL available height, then let the deck take whatever
+// width remains (with a minimum so the deck never gets crushed).
+const PLAY_PAD = 14, PLAY_GAP = 14, MAT_WRAP_PAD = 10, MIN_DECK_W = 300;
+
+function fitPlayArea(){
+  const playArea = document.getElementById('playArea');
+  const totalW = Math.max(0, playArea.clientWidth - PLAY_PAD*2 - PLAY_GAP);
+  const totalH = Math.max(0, playArea.clientHeight - PLAY_PAD*2);
+  if(totalW<=0 || totalH<=0){
+    return { unit:64, matBoxW: MAT_COLS*64 + MAT_WRAP_PAD*2 };
+  }
+
+  let unit = computeMatUnit(1e6, totalH - MAT_WRAP_PAD*2); // height-only ideal size
+  let matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
+
+  if(totalW - matBoxW < MIN_DECK_W){
+    const budget = Math.max(MAT_COLS*28 + MAT_WRAP_PAD*2, totalW - MIN_DECK_W);
+    unit = computeMatUnit(budget - MAT_WRAP_PAD*2, totalH - MAT_WRAP_PAD*2);
+    matBoxW = unit*MAT_COLS + MAT_WRAP_PAD*2;
+  }
+  return { unit, matBoxW };
+}
+
+function layoutMatGeometry(unit){
+  let maxW=0, maxH=0;
+  const geo = MAT_LAYOUT.map(([orient,ca,ra])=>{
+    const x = ca*unit, y = ra*unit;
+    const w = orient==='h' ? unit*2 : unit;
+    const h = orient==='h' ? unit : unit*2;
+    maxW = Math.max(maxW, x+w);
+    maxH = Math.max(maxH, y+h);
+    return {x,y,w,h,orientation:orient};
+  });
+  return {geo, maxW, maxH};
+}
+
+function buildMatSlotData(chain, unit){
+  const {geo} = layoutMatGeometry(unit);
+  return MAT_LAYOUT.map((slotDef,i)=>{
+    const t = chain[i];
+    const swap = MAT_SWAP[i];
+    const valueA = swap ? t.right : t.left;
+    const valueB = swap ? t.left : t.right;
+    return {
+      index:i,
+      orientation: geo[i].orientation,
+      x: geo[i].x, y: geo[i].y, w: geo[i].w, h: geo[i].h,
+      requiredValues:[valueA, valueB]
+    };
+  });
+}
+
+function computeCardFit(availW, availH){
+  const n = 12, gap = 10;
+  let best = null;
+  for(let cols=1; cols<=n; cols++){
+    const rows = Math.ceil(n/cols);
+    const cardW = (availW-(cols-1)*gap)/cols;
+    const cardH = cardW/2;
+    const neededH = rows*cardH + (rows-1)*gap;
+    if(cardW<=0) continue;
+    if(neededH<=availH){
+      if(!best || cardW>best.cardW) best = {cols, rows, cardW, cardH};
+    }
+  }
+  if(!best){
+    const cols = n;
+    const cardW = Math.max(60, (availW-(cols-1)*gap)/cols);
+    best = {cols, rows:1, cardW, cardH:cardW/2};
+  }
+  return best;
+}
+
+function fitDeckSizing(){
+  const deck = document.getElementById('deck');
+  const {w,h} = measureEl(deck, 4, 4);
+  if(w<=0 || h<=0) return;
+  const {cardW, cardH} = computeCardFit(w,h);
+  deck.style.setProperty('--card-w', cardW+'px');
+  deck.style.setProperty('--card-h', cardH+'px');
+  deck.style.setProperty('--card-font', Math.max(11, cardH*0.22)+'px');
+}
+
+let playState = null;
+
+// Builds a brand-new puzzle board: fresh shuffle, fresh geometry fit.
+// `difficulty` is 'beginner' (only the originally-designed card fits each
+// slot) or 'intermediate' (any card whose incoming value is currently valid
+// fits, tracked via a running requiredValue - see onCardPointerUp).
+function renderPlayBoard(chain, difficulty){
+  const shuffled = shuffleForPlay(chain);
+  const fit = fitPlayArea();
+  document.getElementById('matBoardWrap').style.width = fit.matBoxW+'px';
+
+  playState = {
+    chain,
+    difficulty: difficulty === 'intermediate' ? 'intermediate' : 'beginner',
+    initialDeckCards: shuffled.map((t,i)=>({
+      id:i, text1:t.left, text2:t.right,
+      inText:t.inText, inValue:t.inValue, outText:t.outText, outValue:t.outValue
+    })),
+    deckCards: null,
+    matSlotData: buildMatSlotData(chain, fit.unit),
+    matUnit: fit.unit,
+    currentActiveIndex: 0,
+    filledCount: 0,
+    requiredValue: 'START'
+  };
+  resetBoard();
+}
+
+// Returns every placed card to the deck and clears the mat, WITHOUT
+// reshuffling - same puzzle, same deck arrangement, start over. Used by
+// both the mat's "다시 시작" button (mid-play, e.g. after an intermediate-
+// difficulty dead end) and the post-completion "다시 도전" button.
+function resetBoard(){
+  document.removeEventListener('pointermove', onCardPointerMove);
+  document.removeEventListener('pointerup', onCardPointerUp);
+  document.removeEventListener('pointercancel', onCardPointerCancel);
+  dragState = null;
+
+  playState.deckCards = playState.initialDeckCards.slice();
+  playState.currentActiveIndex = 0;
+  playState.filledCount = 0;
+  playState.requiredValue = 'START';
+  playState.placementHistory = [];
+
+  renderDeck();
+  fitDeckSizing();
+  renderMatBoard();
+  activateSlot(0);
+}
+
+// Undoes placements one at a time, most recent first - only the most
+// recently filled slot is marked .removable (clicking it pops one entry
+// off the history). Repeated clicks peel back further placements, so a
+// student can back out of a wrong branch in intermediate difficulty
+// without resetting the whole board.
+function removeLastPlacedCard(){
+  if(!playState || !playState.placementHistory.length) return;
+  const entry = playState.placementHistory.pop();
+  const slotEl = document.querySelector(`.slot[data-index="${entry.slotIndex}"]`);
+  if(slotEl){
+    slotEl.classList.remove('filled', 'removable');
+    slotEl.innerHTML = '';
+  }
+
+  const placedIds = new Set(playState.placementHistory.map(h=>h.card.id));
+  playState.deckCards = playState.initialDeckCards.filter(c=>!placedIds.has(c.id));
+  playState.filledCount--;
+  playState.requiredValue = entry.prevRequiredValue;
+
+  renderDeck();
+  fitDeckSizing();
+  activateSlot(entry.slotIndex);
+
+  const prevEntry = playState.placementHistory[playState.placementHistory.length-1];
+  markRemovableSlot(prevEntry ? prevEntry.slotIndex : null);
+}
+
+function markRemovableSlot(slotIndex){
+  document.querySelectorAll('.slot.removable').forEach(el=>el.classList.remove('removable'));
+  if(slotIndex==null) return;
+  const el = document.querySelector(`.slot[data-index="${slotIndex}"]`);
+  if(el) el.classList.add('removable');
+}
+
+function renderDeck(){
+  const deck = document.getElementById('deck');
+  deck.innerHTML = '';
+  playState.deckCards.forEach(card=>{
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.cardId = card.id;
+    el.innerHTML = `
+      <div class="cell ${playFitClass(card.text1)}">${card.text1}</div>
+      <div class="cell ${playFitClass(card.text2)}">${card.text2}</div>`;
+    attachCardDrag(el);
+    deck.appendChild(el);
+  });
+}
+
+function renderMatBoard(){
+  const board = document.getElementById('matBoard');
+  board.innerHTML = '';
+  let maxW=0, maxH=0;
+  playState.matSlotData.forEach(slot=>{
+    maxW = Math.max(maxW, slot.x+slot.w);
+    maxH = Math.max(maxH, slot.y+slot.h);
+  });
+  board.style.width = maxW+'px';
+  board.style.height = maxH+'px';
+  board.style.setProperty('--mat-font', Math.max(12, playState.matUnit*0.22)+'px');
+  playState.matSlotData.forEach(slot=>{
+    const el = document.createElement('div');
+    el.className = `slot ${slot.orientation}`;
+    el.dataset.index = slot.index;
+    el.style.left = slot.x+'px';
+    el.style.top = slot.y+'px';
+    el.style.width = slot.w+'px';
+    el.style.height = slot.h+'px';
+    board.appendChild(el);
+  });
+}
+
+// Re-measures the deck/mat containers and re-applies sizing without losing
+// filled-slot content. Called on window resize and when switching back to
+// the play tab (its containers have zero size while [hidden]).
+function refitPlayLayout(){
+  if(!playState) return;
+  if(document.getElementById('tabPlay').hidden) return;
+
+  const fit = fitPlayArea();
+  document.getElementById('matBoardWrap').style.width = fit.matBoxW+'px';
+  playState.matUnit = fit.unit;
+
+  fitDeckSizing(); // measured AFTER matBoardWrap's width is (re)set
+
+  const {geo, maxW, maxH} = layoutMatGeometry(fit.unit);
+  const board = document.getElementById('matBoard');
+  board.style.width = maxW+'px';
+  board.style.height = maxH+'px';
+  board.style.setProperty('--mat-font', Math.max(12, fit.unit*0.22)+'px');
+  playState.matSlotData.forEach((slot,i)=>{
+    slot.x = geo[i].x; slot.y = geo[i].y; slot.w = geo[i].w; slot.h = geo[i].h;
+    const el = document.querySelector(`.slot[data-index="${slot.index}"]`);
+    if(el){
+      el.style.left = geo[i].x+'px';
+      el.style.top = geo[i].y+'px';
+      el.style.width = geo[i].w+'px';
+      el.style.height = geo[i].h+'px';
+    }
+  });
+}
+
+let resizeDebounceId = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeDebounceId);
+  resizeDebounceId = setTimeout(refitPlayLayout, 150);
+});
+
+function activateSlot(index){
+  document.querySelectorAll('.slot.active').forEach(el=>el.classList.remove('active'));
+  playState.currentActiveIndex = index;
+  if(index<12){
+    const el = document.querySelector(`.slot[data-index="${index}"]`);
+    if(el) el.classList.add('active');
+  }
+}
+
+function slotAcceptsCard(slot, card){
+  const [ra, rb] = slot.requiredValues;
+  return (card.text1===ra && card.text2===rb) || (card.text1===rb && card.text2===ra);
+}
+
+let dragState = null;
+
+function attachCardDrag(cardEl){
+  cardEl.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    const rect = cardEl.getBoundingClientRect();
+    dragState = {
+      cardEl,
+      cardId: parseInt(cardEl.dataset.cardId,10),
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top
+    };
+    cardEl.setPointerCapture(e.pointerId);
+    cardEl.classList.add('dragging');
+    cardEl.style.width = rect.width+'px';
+    cardEl.style.height = rect.height+'px';
+    cardEl.style.left = rect.left+'px';
+    cardEl.style.top = rect.top+'px';
+    document.addEventListener('pointermove', onCardPointerMove);
+    document.addEventListener('pointerup', onCardPointerUp);
+    document.addEventListener('pointercancel', onCardPointerCancel);
+  });
+}
+
+function onCardPointerMove(e){
+  if(!dragState) return;
+  dragState.cardEl.style.left = (e.clientX - dragState.offsetX)+'px';
+  dragState.cardEl.style.top = (e.clientY - dragState.offsetY)+'px';
+}
+
+function onCardPointerUp(e){
+  if(!dragState) return;
+  document.removeEventListener('pointermove', onCardPointerMove);
+  document.removeEventListener('pointerup', onCardPointerUp);
+  document.removeEventListener('pointercancel', onCardPointerCancel);
+  const {cardEl, cardId} = dragState;
+  // Note: 'dragging' (position:fixed) is intentionally kept here. It is
+  // removed later — in placeCardInSlot (element is removed anyway) or in
+  // returnCardToDeck's setTimeout, together with clearing the inline
+  // left/top/width/height. Removing it here would let the card fall back
+  // to position:relative while the stale viewport-pixel left/top are still
+  // set, making it jump to a bogus offset during the wrong-drop shake.
+
+  const activeSlotEl = document.querySelector('.slot.active');
+  let matched = false;
+  if(activeSlotEl){
+    // Hit-test by the SLOT's center falling inside the CARD's current rect
+    // (not the raw pointer position). Cards are often much bigger than a
+    // slot, so requiring the exact pointer pixel to land inside the small
+    // slot made dropping feel overly fiddly - this way, dropping the card
+    // anywhere that visually covers the slot counts as a hit.
+    const r = activeSlotEl.getBoundingClientRect();
+    const slotCenterX = r.left + r.width/2;
+    const slotCenterY = r.top + r.height/2;
+    const cr = cardEl.getBoundingClientRect();
+    if(slotCenterX>=cr.left && slotCenterX<=cr.right && slotCenterY>=cr.top && slotCenterY<=cr.bottom){
+      const slotIndex = parseInt(activeSlotEl.dataset.index,10);
+      const slot = playState.matSlotData[slotIndex];
+      const card = playState.deckCards.find(c=>c.id===cardId);
+      if(card){
+        if(playState.difficulty==='intermediate'){
+          if(card.inValue === playState.requiredValue){
+            matched = true;
+            // Render per THIS slot's own orientation (not the card's
+            // originally-intended slot, which may differ in intermediate
+            // mode) so the mat's touching sides still show matching values.
+            const swap = MAT_SWAP[slotIndex];
+            const dispLeft = swap ? card.outText : card.inText;
+            const dispRight = swap ? card.inText : card.outText;
+            placeCardInSlot(card, slot, activeSlotEl, cardEl, dispLeft, dispRight);
+            playState.requiredValue = card.outValue;
+          }
+        } else if(slotAcceptsCard(slot, card)){
+          matched = true;
+          placeCardInSlot(card, slot, activeSlotEl, cardEl, card.text1, card.text2);
+        }
+      }
+    }
+  }
+  if(!matched){
+    returnCardToDeck(cardEl);
+  }
+  dragState = null;
+}
+
+function onCardPointerCancel(e){
+  if(!dragState) return;
+  document.removeEventListener('pointermove', onCardPointerMove);
+  document.removeEventListener('pointerup', onCardPointerUp);
+  document.removeEventListener('pointercancel', onCardPointerCancel);
+  const {cardEl} = dragState;
+  returnCardToDeck(cardEl);
+  dragState = null;
+}
+
+function returnCardToDeck(cardEl){
+  cardEl.classList.add('wrong');
+  setTimeout(()=>{
+    cardEl.classList.remove('wrong');
+    cardEl.classList.remove('dragging');
+    cardEl.style.left = '';
+    cardEl.style.top = '';
+    cardEl.style.width = '';
+    cardEl.style.height = '';
+  }, 300);
+}
+
+function placeCardInSlot(card, slot, slotEl, cardEl, dispLeft, dispRight){
+  cardEl.remove();
+  playState.deckCards = playState.deckCards.filter(c=>c.id!==card.id);
+
+  slotEl.classList.add('filled');
+  slotEl.innerHTML = `
+    <div class="cell ${playFitClass(dispLeft)}">${dispLeft}</div>
+    <div class="cell ${playFitClass(dispRight)}">${dispRight}</div>`;
+
+  // requiredValue at this point is still the value THIS card consumed
+  // (the intermediate branch below updates it right after), so it's the
+  // correct "before" value to restore on undo.
+  playState.placementHistory.push({slotIndex: slot.index, card, prevRequiredValue: playState.requiredValue});
+  markRemovableSlot(slot.index);
+
+  playState.filledCount++;
+  if(playState.filledCount>=12){
+    activateSlot(12); // 더 이상 활성 슬롯 없음
+    checkCompletion();
+  } else {
+    activateSlot(slot.index+1);
+  }
+}
+
+function checkCompletion(){
+  if(playState.filledCount>=12 && typeof showCelebration==='function'){
+    showCelebration();
+  }
+}
+
+let confettiAnimId = null;
+let confettiResizeHandler = null;
+
+function startConfetti(){
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  confettiResizeHandler = ()=>{
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+  window.addEventListener('resize', confettiResizeHandler);
+
+  const colors = ['#d9a441','#2f4f42','#b5533c','#7c8a80','#faf6ec','#22392f'];
+  const particles = Array.from({length:160}, ()=>({
+    x: Math.random()*canvas.width,
+    y: -20 - Math.random()*canvas.height*0.5,
+    r: 4 + Math.random()*5,
+    vx: -2 + Math.random()*4,
+    vy: 2 + Math.random()*3,
+    rot: Math.random()*Math.PI*2,
+    vr: -0.2 + Math.random()*0.4,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    shape: Math.random()<0.5 ? 'rect' : 'circle'
+  }));
+
+  const startTime = performance.now();
+  const DURATION = 5000;
+
+  function frame(now){
+    const elapsed = now - startTime;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      if(p.y > canvas.height+20){ p.y = -20; p.x = Math.random()*canvas.width; }
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if(p.shape==='rect'){ ctx.fillRect(-p.r,-p.r*0.6,p.r*2,p.r*1.2); }
+      else { ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    });
+    if(elapsed < DURATION){
+      confettiAnimId = requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      confettiAnimId = null;
+    }
+  }
+  confettiAnimId = requestAnimationFrame(frame);
+}
+
+function stopConfetti(){
+  if(confettiAnimId){ cancelAnimationFrame(confettiAnimId); confettiAnimId=null; }
+  if(confettiResizeHandler){ window.removeEventListener('resize', confettiResizeHandler); confettiResizeHandler=null; }
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+let audioCtx = null;
+let fanfareMasterGain = null;
+
+function playFanfare(){
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if(!AudioContextClass) return;
+  if(!audioCtx) audioCtx = new AudioContextClass();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+
+  const now = audioCtx.currentTime;
+  fanfareMasterGain = audioCtx.createGain();
+  fanfareMasterGain.gain.value = 1;
+  fanfareMasterGain.connect(audioCtx.destination);
+
+  const notes = [
+    {freq:523.25, start:0.00, dur:0.18},
+    {freq:659.25, start:0.18, dur:0.18},
+    {freq:783.99, start:0.36, dur:0.18},
+    {freq:1046.50,start:0.54, dur:0.40},
+    {freq:783.99, start:1.00, dur:0.18},
+    {freq:1046.50,start:1.18, dur:0.18},
+    {freq:1318.51,start:1.36, dur:0.60},
+    {freq:1046.50,start:2.10, dur:0.18},
+    {freq:1318.51,start:2.28, dur:0.18},
+    {freq:1567.98,start:2.46, dur:0.80}
+  ];
+  notes.forEach(n=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = n.freq;
+    const t0 = now + n.start;
+    const t1 = t0 + n.dur;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(0.22, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t1);
+    osc.connect(gain);
+    gain.connect(fanfareMasterGain);
+    osc.start(t0);
+    osc.stop(t1+0.05);
+  });
+
+  [261.63,329.63,392.00].forEach(freq=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.05, now+0.3);
+    gain.gain.linearRampToValueAtTime(0, now+3.2);
+    osc.connect(gain);
+    gain.connect(fanfareMasterGain);
+    osc.start(now);
+    osc.stop(now+3.3);
+  });
+}
+
+function stopFanfare(){
+  if(fanfareMasterGain && audioCtx){
+    const t = audioCtx.currentTime;
+    fanfareMasterGain.gain.cancelScheduledValues(t);
+    fanfareMasterGain.gain.setValueAtTime(0, t);
+  }
+}
+
+function showCelebration(){
+  document.getElementById('celebrateOverlay').hidden = false;
+  startConfetti();
+  playFanfare();
+}
+
+function hideCelebration(){
+  document.getElementById('celebrateOverlay').hidden = true;
+  stopConfetti();
+  stopFanfare();
+}
+
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  hideCelebration();
+  if(playState) resetBoard();
+});
+
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  if(playState) resetBoard();
+});
+
+// Delegated so it keeps working after renderMatBoard() rebuilds the slot
+// elements (only the most recently filled slot ever has .removable).
+document.getElementById('matBoard').addEventListener('click', (e)=>{
+  const slotEl = e.target.closest('.slot.removable');
+  if(slotEl) removeLastPlacedCard();
+});
+
+// ============================================================
+// UI wiring
+// ============================================================
+const opType = document.getElementById('opType');
+const minNum = document.getElementById('minNum');
+const maxNum = document.getElementById('maxNum');
+const genBtn = document.getElementById('genBtn');
+const pdfBtn = document.getElementById('pdfBtn');
+const statusText = document.getElementById('statusText');
+const sheetShell = document.getElementById('sheetShell');
+
+function refreshOpDesc(){
+  const isMake10 = opType.value==='make10';
+  minNum.disabled = isMake10;
+  maxNum.disabled = isMake10;
+  if(isMake10){
+    minNum.value=0; maxNum.value=10;
+  }
+}
+opType.addEventListener('change', refreshOpDesc);
+refreshOpDesc();
+
+let currentTilesShuffled = null;
+let currentChain = null;
+
 genBtn.addEventListener('click', ()=>{
   let min = parseInt(minNum.value,10);
   let max = parseInt(maxNum.value,10);
@@ -737,7 +1576,11 @@ genBtn.addEventListener('click', ()=>{
   currentTilesShuffled = shuffleForPrint(chain);
   renderSheet(currentTilesShuffled);
   pdfBtn.disabled = false;
-  statusText.textContent = '퍼즐이 생성되었습니다. 필요하면 다시 눌러 새로 만들 수 있어요.';
+  document.getElementById('playEmptyHint').hidden = true;
+  document.getElementById('playArea').hidden = false;
+  hideCelebration();
+  renderPlayBoard(chain, document.getElementById('difficulty').value);
+  statusText.textContent = '퍼즐이 생성되었습니다.';
 });
 
 pdfBtn.addEventListener('click', async ()=>{
@@ -765,7 +1608,7 @@ pdfBtn.addEventListener('click', async ()=>{
       pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
     }
     pdf.save('도미노_연산퍼즐.pdf');
-    statusText.textContent = 'PDF 다운로드가 완료되었습니다. (문제지·붙임판·정답 3쪽)';
+    statusText.textContent = 'PDF 다운로드가 완료되었습니다.';
   }catch(e){
     console.error(e);
     statusText.textContent = 'PDF 생성 중 오류가 발생했습니다: ' + (e && e.message ? e.message : e);
